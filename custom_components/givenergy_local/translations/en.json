@@ -1,0 +1,15 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Connect to inverter",
+                "data": {
+                    "host": "Host"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Failed to connect to the inverter."
+        }
+    }
+}

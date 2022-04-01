@@ -1,10 +1,9 @@
 {
-    "name": "Integration blueprint",
+    "name": "GivEnergy Local",
     "hacs": "1.6.0",
     "domains": [
-        "binary_sensor",
-        "sensor",
-        "switch"
+        "sensor"
     ],
-    "homeassistant": "0.118.0"
+    "homeassistant": "2022.4.0",
+    "render_readme": true
 }

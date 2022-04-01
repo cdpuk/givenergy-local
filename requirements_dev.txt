@@ -1,1 +1,4 @@
 homeassistant
+pre-commit
+mypy
+givenergy-modbus==0.10.1

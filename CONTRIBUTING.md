@@ -14,19 +14,19 @@ Github is used to host code, to track issues and feature requests, as well as ac
 Pull requests are the best way to propose changes to the codebase.
 
 1. Fork the repo and create your branch from `master`.
-2. If you've changed something, update the documentation.
-3. Make sure your code lints (using black).
-4. Test you contribution.
-5. Issue that pull request!
+2. Ensure `pre-commit` is set up before making any changes. Run `pre-commit install` to do this.
+3. If you've changed something, update the documentation.
+4. Test you contribution, and ensure any relevant tests have been updated.
+5. Open a pull request.
 
 ## Any contributions you make will be under the MIT Software License
 
-In short, when you submit code changes, your submissions are understood to be under the same [MIT License](http://choosealicense.com/licenses/mit/) that covers the project. Feel free to contact the maintainers if that's a concern.
+In short, when you submit code changes, your submissions are understood to be under the same [MIT License](http://choosealicense.com/licenses/mit/) that covers the project. Feel free to contact the maintainer if that's a concern.
 
 ## Report bugs using Github's [issues](../../issues)
 
 GitHub issues are used to track public bugs.
-Report a bug by [opening a new issue](../../issues/new/choose); it's that easy!
+Report a bug by [opening a new issue](../../issues/new/choose).
 
 ## Write bug reports with detail, background, and sample code
 
@@ -40,21 +40,17 @@ Report a bug by [opening a new issue](../../issues/new/choose); it's that easy!
 - What actually happens
 - Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
 
-People *love* thorough bug reports. I'm not even kidding.
-
 ## Use a Consistent Coding Style
 
-Use [black](https://github.com/ambv/black) to make sure the code follows the style.
+Home Assistant and all custom components use [black](https://github.com/ambv/black) to make sure the code follows the style.
 
-## Test your code modification
+As mentioned above, the `pre-commit` hook will help enforce this.
 
-This custom component is based on [integration_blueprint template](https://github.com/custom-components/integration_blueprint).
+## Developing & testing
 
-It comes with development environment in a container, easy to launch
-if you use Visual Studio Code. With this container you will have a stand alone
-Home Assistant instance running and already configured with the included
-[`.devcontainer/configuration.yaml`](./.devcontainer/configuration.yaml)
-file.
+This repository is set up with support for Visual Studio Code development containers. After you've forked and opened the repository, VS Code will prompt you to reopen the project inside a container.
+
+This allows you to easily run the integration against an isolated Home Assistant instance.
 
 ## License
 

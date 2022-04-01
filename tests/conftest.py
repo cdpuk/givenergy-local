@@ -1,4 +1,4 @@
-"""Global fixtures for integration_blueprint integration."""
+"""Global fixtures for givenergy_local integration."""
 # Fixtures allow you to replace functions with a Mock object. You can perform
 # many options via the Mock to reflect a particular behavior from the original
 # function that you want to see without going through the function's actual logic.
@@ -25,6 +25,7 @@ pytest_plugins = "pytest_homeassistant_custom_component"
 # Remove to enable selective use of this fixture
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations):
+    """Enable loading custom integrations."""
     yield
 
 
@@ -40,14 +41,12 @@ def skip_notifications_fixture():
         yield
 
 
-# This fixture, when used, will result in calls to async_get_data to return None. To have the call
+# This fixture, when used, will result in calls to fetch_data to return None. To have the call
 # return a value, we would add the `return_value=<VALUE_TO_RETURN>` parameter to the patch call.
 @pytest.fixture(name="bypass_get_data")
 def bypass_get_data_fixture():
     """Skip calls to get data from API."""
-    with patch(
-        "custom_components.integration_blueprint.IntegrationBlueprintApiClient.async_get_data"
-    ):
+    with patch("custom_components.givenergy_local.givenergy.GivEnergy.fetch_data"):
         yield
 
 
@@ -57,7 +56,7 @@ def bypass_get_data_fixture():
 def error_get_data_fixture():
     """Simulate error when retrieving data from API."""
     with patch(
-        "custom_components.integration_blueprint.IntegrationBlueprintApiClient.async_get_data",
+        "custom_components.givenergy_local.givenergy.GivEnergy.fetch_data",
         side_effect=Exception,
     ):
         yield
