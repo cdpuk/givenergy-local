@@ -11,7 +11,7 @@ This custom component provides local access to GivEnergy inverters via Modbus. T
 
 Model | Status
 -- | --
-GIV-HY5.0 | Tested by maintainer (battery support pending installation)
+Giv-HY5.0 | Tested by maintainer (battery support pending installation)
 
 Modbus support is provided by the `givenergy-modbus` library. If other devices are found to have issues, it's likely that changes will need to be made to the underlying library.
 
