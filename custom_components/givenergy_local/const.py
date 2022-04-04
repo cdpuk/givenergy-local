@@ -6,5 +6,6 @@ DOMAIN = "givenergy_local"
 LOGGER: Logger = getLogger(__package__)
 
 CONF_HOST = "host"
+CONF_NUM_BATTERIES = "num_batteries"
 
 MANUFACTURER = "GivEnergy"

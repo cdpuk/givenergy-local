@@ -18,7 +18,7 @@ class GivEnergy:
 
     initial_load_complete = False
 
-    def __init__(self, host: str, num_batteries: int = 1) -> None:
+    def __init__(self, host: str, num_batteries: int) -> None:
         """Prepare an inverter connection."""
         LOGGER.info("Connecting to %s", host)
         self.client = GivEnergyClient(host)

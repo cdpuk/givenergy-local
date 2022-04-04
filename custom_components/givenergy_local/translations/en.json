@@ -4,7 +4,8 @@
             "user": {
                 "title": "Connect to inverter",
                 "data": {
-                    "host": "Host"
+                    "host": "Host",
+                    "num_batteries": "Number of batteries"
                 }
             }
         },
