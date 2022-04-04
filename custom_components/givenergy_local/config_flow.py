@@ -10,10 +10,12 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 import voluptuous as vol
 
-from .const import CONF_HOST, DOMAIN, LOGGER
+from .const import CONF_HOST, CONF_NUM_BATTERIES, DOMAIN, LOGGER
 from .givenergy import GivEnergy
 
-STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
+STEP_USER_DATA_SCHEMA = vol.Schema(
+    {vol.Required(CONF_HOST): str, vol.Required(CONF_NUM_BATTERIES): int}
+)
 
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
@@ -22,7 +24,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
     try:
-        givenergy = GivEnergy(data[CONF_HOST])
+        givenergy = GivEnergy(data[CONF_HOST], num_batteries=data[CONF_NUM_BATTERIES])
         async with async_timeout.timeout(10):
             await hass.async_add_executor_job(givenergy.fetch_data)
 
@@ -35,7 +37,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
     """Handle a config flow for GivEnergy."""
 
-    VERSION = 1
+    VERSION = 2
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None

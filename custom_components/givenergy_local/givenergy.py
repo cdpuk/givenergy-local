@@ -10,15 +10,13 @@ from .const import LOGGER
 class GivEnergyException(Exception):
     """An error encountered when fetching data from the inverter."""
 
-    pass
-
 
 class GivEnergy:
     """A lightweight wrapper around the underlying givenergy_modbus library."""
 
     initial_load_complete = False
 
-    def __init__(self, host: str, num_batteries: int = 1) -> None:
+    def __init__(self, host: str, num_batteries: int) -> None:
         """Prepare an inverter connection."""
         LOGGER.info("Connecting to %s", host)
         self.client = GivEnergyClient(host)

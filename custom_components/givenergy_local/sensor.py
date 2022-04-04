@@ -19,6 +19,7 @@ from homeassistant.const import (
     ELECTRIC_POTENTIAL_VOLT,
     ENERGY_KILO_WATT_HOUR,
     FREQUENCY_HERTZ,
+    PERCENTAGE,
     POWER_WATT,
     TEMP_CELSIUS,
 )
@@ -27,8 +28,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
 from . import GivEnergyUpdateCoordinator
-from .const import DOMAIN
-from .entity import GivEnergyEntity
+from .const import DOMAIN, LOGGER
+from .entity import BatteryEntity, InverterEntity
 
 
 class Icon(str, Enum):
@@ -43,7 +44,7 @@ class Icon(str, Enum):
     Temperature = "mdi:thermometer"
 
 
-_BASIC_SENSORS = [
+_BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="e_pv_total",
         name="PV Energy Total",
@@ -85,6 +86,30 @@ _BASIC_SENSORS = [
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
     ),
     SensorEntityDescription(
+        key="e_battery_charge_day",
+        name="Battery Charge Today",
+        icon=Icon.Battery,
+        device_class=DEVICE_CLASS_ENERGY,
+        state_class=STATE_CLASS_TOTAL_INCREASING,
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+    ),
+    SensorEntityDescription(
+        key="e_battery_discharge_day",
+        name="Battery Discharge Today",
+        icon=Icon.Battery,
+        device_class=DEVICE_CLASS_ENERGY,
+        state_class=STATE_CLASS_TOTAL_INCREASING,
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+    ),
+    SensorEntityDescription(
+        key="e_battery_throughput_total",
+        name="Battery Throughput Total",
+        icon=Icon.Battery,
+        device_class=DEVICE_CLASS_ENERGY,
+        state_class=STATE_CLASS_TOTAL_INCREASING,
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+    ),
+    SensorEntityDescription(
         key="p_load_demand",
         name="Consumption Power",
         icon=Icon.AC,
@@ -96,6 +121,14 @@ _BASIC_SENSORS = [
         key="p_grid_out",
         name="Grid Export Power",
         icon=Icon.GridExport,
+        device_class=DEVICE_CLASS_POWER,
+        state_class=STATE_CLASS_MEASUREMENT,
+        native_unit_of_measurement=POWER_WATT,
+    ),
+    SensorEntityDescription(
+        key="p_battery",
+        name="Battery Power",
+        icon=Icon.Battery,
         device_class=DEVICE_CLASS_POWER,
         state_class=STATE_CLASS_MEASUREMENT,
         native_unit_of_measurement=POWER_WATT,
@@ -170,6 +203,24 @@ _CONSUMPTION_TOTAL_SENSOR = SensorEntityDescription(
     native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
 )
 
+_BASIC_BATTERY_SENSORS = [
+    SensorEntityDescription(
+        key="battery_soc",
+        name="Battery Charge",
+        icon=Icon.Battery,
+        state_class=STATE_CLASS_MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+    ),
+    SensorEntityDescription(
+        key="battery_remaining_capacity",
+        name="Battery Remaining Capacity",
+        icon=Icon.Battery,
+        device_class=DEVICE_CLASS_ENERGY,
+        state_class=STATE_CLASS_MEASUREMENT,
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+    ),
+]
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -177,15 +228,15 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Add sensors for passed config_entry in HA."""
-    coordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator: GivEnergyUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
-    # Add basic sensors that map directly to registers.
+    # Add basic inverter sensors that map directly to registers.
     async_add_entities(
         InverterBasicSensor(coordinator, config_entry, entity_description)
-        for entity_description in _BASIC_SENSORS
+        for entity_description in _BASIC_INVERTER_SENSORS
     )
 
-    # Add other sensors that require more customization
+    # Add other inverter sensors that require more customization
     # (e.g. sensors that derive values from several registers).
     async_add_entities(
         [
@@ -204,8 +255,22 @@ async def async_setup_entry(
         ]
     )
 
+    # Add battery sensors
+    for batt_num, batt in enumerate(coordinator.data.batteries):
+        # Only add data for batteries if we can successfully read the serial number
+        LOGGER.info("S/N: '%s'", batt.battery_serial_number)
+        if not batt.battery_serial_number:
+            async_add_entities(
+                BatteryBasicSensor(
+                    coordinator, config_entry, entity_description, batt_num
+                )
+                for entity_description in _BASIC_BATTERY_SENSORS
+            )
+        else:
+            LOGGER.warning("Ignoring battery %d due to missing serial number", batt_num)
 
-class InverterBasicSensor(GivEnergyEntity, SensorEntity):
+
+class InverterBasicSensor(InverterEntity, SensorEntity):
     """A sensor that derives its value from the register values fetched from the inverter."""
 
     def __init__(
@@ -272,3 +337,26 @@ class ConsumptionTotalSensor(InverterBasicSensor):
             + self.coordinator.data.inverter.e_grid_in_total
             - self.coordinator.data.inverter.e_grid_out_total
         )
+
+
+class BatteryBasicSensor(BatteryEntity, SensorEntity):
+    """A battery sensor that derives its value from the register values fetched from the inverter."""
+
+    def __init__(
+        self,
+        coordinator: GivEnergyUpdateCoordinator,
+        config_entry: ConfigEntry,
+        entity_description: SensorEntityDescription,
+        battery_id: int,
+    ) -> None:
+        """Initialize a sensor based on an entity description."""
+        super().__init__(coordinator, config_entry, battery_id)
+        self._attr_unique_id = (
+            f"{self.data.battery_serial_number}_{entity_description.key}"
+        )
+        self.entity_description = entity_description
+
+    @property
+    def native_value(self) -> StateType:
+        """Return the register value as referenced by the 'key' property of the associated entity description."""
+        return self.data.dict().get(self.entity_description.key)
