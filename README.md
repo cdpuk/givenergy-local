@@ -13,7 +13,7 @@ Model | Status
 -- | --
 Giv-HY5.0 | Tested by maintainer (battery support pending installation)
 
-Modbus support is provided by the `givenergy-modbus` library. If other devices are found to have issues, it's likely that changes will need to be made to the underlying library.
+Modbus support is provided by the [`givenergy-modbus`][givenergy-modbus] library. If other devices are found to have issues, it's likely that changes will need to be made to the underlying library.
 
 ## Sensors
 
@@ -37,9 +37,18 @@ The integraton provides the following sensors:
 
 ## Installation
 
+This integration is delivered as a HACS custom repository.
+
+1. Download and install [HACS][hacs-download].
+2. Add a [custom repository][hacs-custom] in HACS. You will need to enter the URL of this repository when prompted: `https://github.com/cdpuk/givenergy-local`.
+
+## Configuration
+
 You need to know the hostname or IP address of your inverter, which you can normally work out by looking at your router status pages. When using an IP address that was issued with DHCP, bear in mind it needs to remain stable; this is normally fine since inverters stay connected 24/7.
 
-Install this integration via HACS, then enter the inverter address during the setup steps.
+
+* Go to **Configuration** > **Devices & Services** > **Add Integration**, then find **GivEnergy Local** in the list.
+* Enter the inverter address when prompted.
 
 ## PVOutput upload
 
@@ -79,3 +88,6 @@ If you want to contribute to this please read the [Contribution Guidelines](CONT
 [license-shield]: https://img.shields.io/github/license/cdpuk/givenergy-local.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/cdpuk/givenergy-local.svg?style=for-the-badge
 [releases]: https://github.com/cdpuk/givenergy-local/releases
+[givenergy-modbus]: https://github.com/dewet22/givenergy-modbus
+[hacs-download]: https://hacs.xyz/docs/setup/download
+[hacs-custom]: https://hacs.xyz/docs/faq/custom_repositories
