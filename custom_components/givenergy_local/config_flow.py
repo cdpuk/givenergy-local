@@ -4,12 +4,11 @@ from __future__ import annotations
 from typing import Any
 
 import async_timeout
-import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
+import voluptuous as vol
 
 from .const import CONF_HOST, DOMAIN, LOGGER
 from .givenergy import GivEnergy
