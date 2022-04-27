@@ -27,7 +27,8 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         async with async_timeout.timeout(10):
             await hass.async_add_executor_job(givenergy.fetch_data)
 
-        return {"title": "Solar Inverter", "host": data[CONF_HOST]}
+        serial_no = givenergy.plant.inverter.inverter_serial_number
+        return {"title": f"Solar Inverter (S/N {serial_no})", "host": data[CONF_HOST]}
     except Exception:  # pylint: disable=broad-except
         raise CannotConnect from Exception
 
