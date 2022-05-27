@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from datetime import timedelta
-from typing import Any
 
 import async_timeout
 from givenergy_modbus.model.plant import Plant
