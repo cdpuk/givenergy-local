@@ -118,7 +118,7 @@ _BASIC_SENSORS = [
     ),
     SensorEntityDescription(
         key="temp_inverter_heatsink",
-        name="Heatsink Temperature",
+        name="Inverter Heatsink Temperature",
         icon=Icon.Temperature,
         device_class=DEVICE_CLASS_TEMPERATURE,
         state_class=STATE_CLASS_MEASUREMENT,
@@ -126,7 +126,7 @@ _BASIC_SENSORS = [
     ),
     SensorEntityDescription(
         key="temp_charger",
-        name="Charger Temperature",
+        name="Inverter Charger Temperature",
         icon=Icon.Temperature,
         device_class=DEVICE_CLASS_TEMPERATURE,
         state_class=STATE_CLASS_MEASUREMENT,
