@@ -28,7 +28,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
 from . import GivEnergyUpdateCoordinator
-from .const import DOMAIN
+from .const import DOMAIN, LOGGER
 from .entity import BatteryEntity, InverterEntity
 
 
@@ -256,11 +256,18 @@ async def async_setup_entry(
     )
 
     # Add battery sensors
-    for batt_num, _ in enumerate(coordinator.data.batteries):
-        async_add_entities(
-            BatteryBasicSensor(coordinator, config_entry, entity_description, batt_num)
-            for entity_description in _BASIC_BATTERY_SENSORS
-        )
+    for batt_num, batt in enumerate(coordinator.data.batteries):
+        # Only add data for batteries if we can successfully read the serial number
+        LOGGER.info("S/N: '%s'", batt.battery_serial_number)
+        if not batt.battery_serial_number:
+            async_add_entities(
+                BatteryBasicSensor(
+                    coordinator, config_entry, entity_description, batt_num
+                )
+                for entity_description in _BASIC_BATTERY_SENSORS
+            )
+        else:
+            LOGGER.warning("Ignoring battery %d due to missing serial number", batt_num)
 
 
 class InverterBasicSensor(InverterEntity, SensorEntity):
