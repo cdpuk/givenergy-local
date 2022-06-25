@@ -10,8 +10,6 @@ from .const import LOGGER
 class GivEnergyException(Exception):
     """An error encountered when fetching data from the inverter."""
 
-    pass
-
 
 class GivEnergy:
     """A lightweight wrapper around the underlying givenergy_modbus library."""

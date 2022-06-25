@@ -32,7 +32,7 @@ class InverterEntity(CoordinatorEntity[Plant]):
             model=model_name,
             manufacturer=MANUFACTURER,
             sw_version=self.data.firmware_version,
-            configuration_url="https://www.givenergy.cloud",
+            configuration_url="https://givenergy.cloud",
         )
 
     @property
@@ -70,8 +70,9 @@ class BatteryEntity(CoordinatorEntity[Plant]):
             identifiers={(DOMAIN, self.data.battery_serial_number)},
             name="Battery",
             manufacturer=MANUFACTURER,
-            sw_version=self.coordinator.data.inverter.firmware_version,
-            configuration_url="https://www.givenergy.cloud",
+            sw_version=self.data.bms_firmware_version,
+            configuration_url="https://givenergy.cloud",
+            via_device=(DOMAIN, self.coordinator.data.inverter.inverter_serial_number),
         )
 
     @property
