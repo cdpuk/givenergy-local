@@ -134,6 +134,12 @@ _BASIC_INVERTER_SENSORS = [
         native_unit_of_measurement=POWER_WATT,
     ),
     SensorEntityDescription(
+        key="battery_percent",
+        name="Battery Percent",
+        icon=Icon.Battery,
+        native_unit_of_measurement=PERCENTAGE,
+    ),
+    SensorEntityDescription(
         key="v_ac1",
         name="AC Voltage",
         icon=Icon.AC,
