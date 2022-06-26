@@ -54,6 +54,22 @@ _BASIC_INVERTER_SENSORS = [
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
     ),
     SensorEntityDescription(
+        key="p_pv1",
+        name="PV Power (String 1)",
+        icon=Icon.PV,
+        device_class=DEVICE_CLASS_POWER,
+        state_class=STATE_CLASS_MEASUREMENT,
+        native_unit_of_measurement=POWER_WATT,
+    ),
+    SensorEntityDescription(
+        key="p_pv2",
+        name="PV Power (String 2)",
+        icon=Icon.PV,
+        device_class=DEVICE_CLASS_POWER,
+        state_class=STATE_CLASS_MEASUREMENT,
+        native_unit_of_measurement=POWER_WATT,
+    ),
+    SensorEntityDescription(
         key="e_grid_in_day",
         name="Grid Import Today",
         icon=Icon.GridImport,
@@ -141,7 +157,7 @@ _BASIC_INVERTER_SENSORS = [
     ),
     SensorEntityDescription(
         key="v_ac1",
-        name="AC Voltage",
+        name="Grid Voltage",
         icon=Icon.AC,
         device_class=DEVICE_CLASS_VOLTAGE,
         state_class=STATE_CLASS_MEASUREMENT,
@@ -149,7 +165,7 @@ _BASIC_INVERTER_SENSORS = [
     ),
     SensorEntityDescription(
         key="f_ac1",
-        name="AC Frequency",
+        name="Grid Frequency",
         icon=Icon.AC,
         device_class=DEVICE_CLASS_FREQUENCY,
         state_class=STATE_CLASS_MEASUREMENT,
