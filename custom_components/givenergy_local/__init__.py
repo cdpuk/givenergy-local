@@ -67,7 +67,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         LOGGER.info("Migration to version %s successful", entry.version)
         return True
     else:
-        LOGGER.error("Existing schema verson %s is not supported", entry.version)
+        LOGGER.error("Existing schema version %s is not supported", entry.version)
         return False
 
 
@@ -80,7 +80,7 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
             hass,
             LOGGER,
             name="Inverter",
-            update_interval=timedelta(seconds=60),
+            update_interval=timedelta(seconds=30),
         )
         self.connection = connection
 
