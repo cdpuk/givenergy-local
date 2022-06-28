@@ -8,7 +8,7 @@ from . import GivEnergyUpdateCoordinator
 from .const import DOMAIN, MANUFACTURER
 
 
-class InverterEntity(CoordinatorEntity[Plant]):
+class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     """An entity that derives data from a GivEnergy inverter."""
 
     def __init__(

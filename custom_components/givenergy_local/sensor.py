@@ -38,6 +38,8 @@ class Icon(str, Enum):
     PV = "mdi:solar-power"
     AC = "mdi:power-plug-outline"
     Battery = "mdi:battery-high"
+    BatteryMinus = "mdi:battery-minus"
+    BatteryPlus = "mdi:battery-plus"
     Inverter = "mdi:flash"
     GridImport = "mdi:transmission-tower-export"
     GridExport = "mdi:transmission-tower-import"
@@ -225,6 +227,24 @@ _CONSUMPTION_TOTAL_SENSOR = SensorEntityDescription(
     native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
 )
 
+_BATTERY_CHARGE_LIMIT_SENSOR = SensorEntityDescription(
+    key="battery_charge_limit",
+    name="Battery Charge Power Limit",
+    icon=Icon.BatteryPlus,
+    device_class=DEVICE_CLASS_POWER,
+    state_class=STATE_CLASS_MEASUREMENT,
+    native_unit_of_measurement=POWER_WATT,
+)
+
+_BATTERY_DISCHARGE_LIMIT_SENSOR = SensorEntityDescription(
+    key="battery_discharge_limit",
+    name="Battery Discharge Power Limit",
+    icon=Icon.BatteryMinus,
+    device_class=DEVICE_CLASS_POWER,
+    state_class=STATE_CLASS_MEASUREMENT,
+    native_unit_of_measurement=POWER_WATT,
+)
+
 _BASIC_BATTERY_SENSORS = [
     SensorEntityDescription(
         key="battery_soc",
@@ -273,6 +293,16 @@ async def async_setup_entry(
             ),
             ConsumptionTotalSensor(
                 coordinator, config_entry, entity_description=_CONSUMPTION_TOTAL_SENSOR
+            ),
+            BatteryChargeLimitSensor(
+                coordinator,
+                config_entry,
+                entity_description=_BATTERY_CHARGE_LIMIT_SENSOR,
+            ),
+            BatteryDischargeLimitSensor(
+                coordinator,
+                config_entry,
+                entity_description=_BATTERY_DISCHARGE_LIMIT_SENSOR,
             ),
         ]
     )
@@ -359,6 +389,32 @@ class ConsumptionTotalSensor(InverterBasicSensor):
             + self.coordinator.data.inverter.e_grid_in_total
             - self.coordinator.data.inverter.e_grid_out_total
         )
+
+
+class BatteryChargeLimitSensor(InverterBasicSensor):
+    """Battery charge limit sensor."""
+
+    @property
+    def native_value(self) -> StateType:
+        """Map the low-level value to power in Watts."""
+        raw_value = self.coordinator.data.inverter.battery_charge_limit
+
+        # Warning: value for batteries with max charge/discharge rates of 2.6kW
+        # Different logic almost certainly required on other units
+        return 2600 if raw_value == 50 else raw_value * 64
+
+
+class BatteryDischargeLimitSensor(InverterBasicSensor):
+    """Battery discharge limit sensor."""
+
+    @property
+    def native_value(self) -> StateType:
+        """Map the low-level value to power in Watts."""
+        raw_value = self.coordinator.data.inverter.battery_discharge_limit
+
+        # Warning: value for batteries with max charge/discharge rates of 2.6kW
+        # Different logic almost certainly required on other units
+        return 2600 if raw_value == 50 else raw_value * 64
 
 
 class BatteryBasicSensor(BatteryEntity, SensorEntity):
