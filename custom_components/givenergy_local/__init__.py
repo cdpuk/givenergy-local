@@ -13,6 +13,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .const import CONF_HOST, CONF_NUM_BATTERIES, DOMAIN, LOGGER
 from .givenergy import GivEnergy
+from .services import async_setup_services, async_unload_services
 
 _PLATFORMS: list[Platform] = [Platform.SENSOR]
 
@@ -32,6 +33,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     hass.config_entries.async_setup_platforms(entry, _PLATFORMS)
 
+    async_setup_services(hass)
+
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     return True
 
@@ -43,6 +46,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
+        async_unload_services(hass)
 
     return unload_ok
 
