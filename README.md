@@ -63,7 +63,7 @@ shell_command:
          -d "t={{now().strftime("%H:%M")}}"
          -d "v1={{ (states('sensor.pv_energy_today') | float * 1000)  | int }}"
          -d "v2={{ states('sensor.pv_power') }}"
-         -d "v6={{ states('sensor.ac_voltage') }}"
+         -d "v6={{ states('sensor.grid_voltage') }}"
          -H "X-Pvoutput-SystemId: <system-id>"
          -H "X-Pvoutput-Apikey: <api-key>"
          https://pvoutput.org/service/r2/addstatus.jsp
