@@ -294,16 +294,16 @@ async def async_setup_entry(
             ConsumptionTotalSensor(
                 coordinator, config_entry, entity_description=_CONSUMPTION_TOTAL_SENSOR
             ),
-            BatteryChargeLimitSensor(
-                coordinator,
-                config_entry,
-                entity_description=_BATTERY_CHARGE_LIMIT_SENSOR,
-            ),
-            BatteryDischargeLimitSensor(
-                coordinator,
-                config_entry,
-                entity_description=_BATTERY_DISCHARGE_LIMIT_SENSOR,
-            ),
+            # BatteryChargeLimitSensor(
+            #     coordinator,
+            #     config_entry,
+            #     entity_description=_BATTERY_CHARGE_LIMIT_SENSOR,
+            # ),
+            # BatteryDischargeLimitSensor(
+            #     coordinator,
+            #     config_entry,
+            #     entity_description=_BATTERY_DISCHARGE_LIMIT_SENSOR,
+            # ),
         ]
     )
 

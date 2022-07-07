@@ -94,6 +94,10 @@ async def _async_set_charge_power_limit(
         connection: GivEnergy = hass.data[DOMAIN][config_entry].connection
         target_value = int(data[_ATTR_POWER] / 64)
 
+        # Numbering seems to stop at 39, then jump to 50 = 2.6kW
+        if target_value > 39:
+            target_value = 50
+
         LOGGER.debug(
             "Setting battery charge limit to %d (%dW)", target_value, data[_ATTR_POWER]
         )

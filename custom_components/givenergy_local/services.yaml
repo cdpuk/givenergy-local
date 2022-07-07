@@ -4,21 +4,22 @@ set_charge_limit:
   description: Set the maximum battery charging rate
   fields:
     device_id:
-      name: Device
-      description: Inverter to control
+      name: Inverter
       required: true
       selector:
         device:
           integration: givenergy_local
     power:
       name: Power
-      description: Charge power
+      description: >
+        The value here will be rounded down to the nearest 64W, which is the step size supported
+        by the inverter. The exception is at the top end of the scale, where 2496W and 2600W are
+        the highest supported values.
       required: true
       selector:
         number:
           min: 0
-          max: 2496
-          step: 64
+          max: 2600
           unit_of_measurement: W
 activate_mode_eco:
   name: Activate eco mode
