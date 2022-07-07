@@ -310,8 +310,8 @@ async def async_setup_entry(
     # Add battery sensors
     for batt_num, batt in enumerate(coordinator.data.batteries):
         # Only add data for batteries if we can successfully read the serial number
-        LOGGER.info("S/N: '%s'", batt.battery_serial_number)
-        if not batt.battery_serial_number:
+        # Failure to read a S/N can result in null bytes
+        if batt.battery_serial_number.replace("\x00", ""):
             async_add_entities(
                 BatteryBasicSensor(
                     coordinator, config_entry, entity_description, batt_num
