@@ -17,20 +17,26 @@ class GivEnergy:
     initial_load_complete = False
 
     def __init__(self, host: str, num_batteries: int) -> None:
-        """Prepare an inverter connection."""
-        LOGGER.info("Connecting to %s", host)
-        self.client = GivEnergyClient(host)
+        """Prepare for inverter connections."""
+        self.host = host
         self.plant = Plant(number_batteries=num_batteries)
 
     def fetch_data(self) -> Plant:
         """Fetch data from the inverter via modbus."""
-        if self.initial_load_complete:
-            LOGGER.info("Performing partial refresh")
-            self.client.refresh_plant(self.plant, full_refresh=False)
-        else:
-            LOGGER.info("Performing full refresh")
-            self.client.refresh_plant(self.plant, full_refresh=True)
-            self.initial_load_complete = True
+        LOGGER.info("Fetching data from %s", self.host)
+        try:
+            client = GivEnergyClient(self.host)
+            if self.initial_load_complete:
+                LOGGER.info("Performing partial refresh")
+                client.refresh_plant(self.plant, full_refresh=False)
+            else:
+                LOGGER.info("Performing full refresh")
+                client.refresh_plant(self.plant, full_refresh=True)
+                self.initial_load_complete = True
+        finally:
+            # We seem to have better reliability when we avoid reusing the client object
+            # Close the underlying socket to clean up resources
+            client.modbus_client.close()
 
         # The connection sometimes returns what it claims is valid data, but many of the values
         # are zero. This is particularly painful when values are used in the energy dashboard,
