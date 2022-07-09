@@ -12,9 +12,31 @@ set_charge_limit:
     power:
       name: Power
       description: >
-        The value here will be rounded down to the nearest 64W, which is the step size supported
-        by the inverter. The exception is at the top end of the scale, where 2496W and 2600W are
-        the highest supported values.
+        The value here will be rounded down to the nearest 64W, which is the
+        step size supported by the inverter. The exception is at the top end
+        of the scale, where 2496W and 2600W are the highest supported values.
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 2600
+          unit_of_measurement: W
+set_discharge_limit:
+  name: Set discharge power limit
+  description: Set the maximum battery discharging rate
+  fields:
+    device_id:
+      name: Inverter
+      required: true
+      selector:
+        device:
+          integration: givenergy_local
+    power:
+      name: Power
+      description: >
+        The value here will be rounded down to the nearest 64W, which is the
+        step size supported by the inverter. The exception is at the top end
+        of the scale, where 2496W and 2600W are the highest supported values.
       required: true
       selector:
         number:
@@ -34,6 +56,29 @@ activate_mode_eco:
       selector:
         device:
           integration: givenergy_local
+activate_mode_timed_discharge:
+  name: Activate timed discharge mode
+  description: >
+    This mode will discharge your batteries to your home during a period you
+    define
+  fields:
+    device_id:
+      name: Device
+      description: Inverter to control
+      required: true
+      selector:
+        device:
+          integration: givenergy_local
+    start_time:
+      name: Start time
+      required: true
+      selector:
+        time:
+    end_time:
+      name: End time
+      required: true
+      selector:
+        time:
 activate_mode_timed_export:
   name: Activate timed export mode
   description: >

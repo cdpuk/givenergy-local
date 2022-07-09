@@ -3,6 +3,7 @@ import asyncio
 import datetime
 from typing import Any, Callable
 
+from givenergy_modbus.client import GivEnergyClient
 from homeassistant.const import ATTR_DEVICE_ID
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import device_registry as dr
@@ -27,11 +28,14 @@ _SERVICE_SET_CHARGE_LIMIT_SCHEMA = vol.All(
     vol.Schema({vol.Required(ATTR_DEVICE_ID): str, vol.Required(_ATTR_POWER): int})
 )
 
+_SERVICE_SET_DISCHARGE_LIMIT = "set_discharge_limit"
+_SERVICE_SET_DISCHARGE_LIMIT_SCHEMA = _SERVICE_SET_CHARGE_LIMIT_SCHEMA
+
 _SERVICE_ACTIVATE_ECO = "activate_mode_eco"
 _SERVICE_ACTIVATE_ECO_SCHEMA = vol.All(vol.Schema({vol.Required(ATTR_DEVICE_ID): str}))
 
-_SERVICE_ACTIVATE_TIMED_EXPORT = "activate_mode_timed_export"
-_SERVICE_ACTIVATE_TIMED_EXPORT_SCHEMA = vol.All(
+_SERVICE_ACTIVATE_TIMED_DISCHARGE = "activate_mode_timed_discharge"
+_SERVICE_ACTIVATE_TIMED_DISCHARGE_SCHEMA = vol.All(
     vol.Schema(
         {
             vol.Required(ATTR_DEVICE_ID): str,
@@ -41,14 +45,22 @@ _SERVICE_ACTIVATE_TIMED_EXPORT_SCHEMA = vol.All(
     )
 )
 
+
+_SERVICE_ACTIVATE_TIMED_EXPORT = "activate_mode_timed_export"
+_SERVICE_ACTIVATE_TIMED_EXPORT_SCHEMA = _SERVICE_ACTIVATE_TIMED_DISCHARGE_SCHEMA
+
 _SUPPORTED_SERVICES = [
     _SERVICE_SET_CHARGE_LIMIT,
+    _SERVICE_SET_DISCHARGE_LIMIT,
     _SERVICE_ACTIVATE_ECO,
+    _SERVICE_ACTIVATE_TIMED_DISCHARGE,
     _SERVICE_ACTIVATE_TIMED_EXPORT,
 ]
 _SERVICE_TO_SCHEMA = {
     _SERVICE_SET_CHARGE_LIMIT: _SERVICE_SET_CHARGE_LIMIT_SCHEMA,
+    _SERVICE_SET_DISCHARGE_LIMIT: _SERVICE_SET_DISCHARGE_LIMIT_SCHEMA,
     _SERVICE_ACTIVATE_ECO: _SERVICE_ACTIVATE_ECO_SCHEMA,
+    _SERVICE_ACTIVATE_TIMED_DISCHARGE: _SERVICE_ACTIVATE_TIMED_DISCHARGE_SCHEMA,
     _SERVICE_ACTIVATE_TIMED_EXPORT: _SERVICE_ACTIVATE_TIMED_EXPORT_SCHEMA,
 }
 
@@ -58,7 +70,9 @@ def async_setup_services(hass: HomeAssistant) -> None:
 
     services = {
         _SERVICE_SET_CHARGE_LIMIT: _async_set_charge_power_limit,
+        _SERVICE_SET_DISCHARGE_LIMIT: _async_set_discharge_power_limit,
         _SERVICE_ACTIVATE_ECO: _async_activate_mode_eco,
+        _SERVICE_ACTIVATE_TIMED_DISCHARGE: _async_activate_mode_timed_discharge,
         _SERVICE_ACTIVATE_TIMED_EXPORT: _async_activate_mode_timed_export,
     }
 
@@ -94,7 +108,7 @@ async def _async_get_config_entries(hass: HomeAssistant, device_id: str) -> set[
 
 
 async def _async_service_call(
-    hass: HomeAssistant, device_id: str, func: Callable[[GivEnergy], None]
+    hass: HomeAssistant, device_id: str, func: Callable[[GivEnergyClient], None]
 ) -> None:
     # Just take the first matching config entry
     # We really shouldn't have multiple entries for the same device ID
@@ -107,14 +121,18 @@ async def _async_service_call(
 
     while attempts > 0:
         LOGGER.debug("Attempting service call (%d attempts left)", attempts)
-        connection: GivEnergy = hass.data[DOMAIN][config_entry].connection
+        ge: GivEnergy = hass.data[DOMAIN][config_entry].connection
+        client = GivEnergyClient(ge.host)
+
         try:
-            await hass.async_add_executor_job(func, connection)
+            await hass.async_add_executor_job(func, client)
             break
         except AssertionError as err:
             LOGGER.error("Service call failed %s", err)
             attempts = attempts - 1
             await asyncio.sleep(_DELAY_BETWEEN_ATTEMPTS)
+        finally:
+            client.modbus_client.close()
 
 
 async def _async_set_charge_power_limit(
@@ -122,7 +140,7 @@ async def _async_set_charge_power_limit(
 ) -> None:
     """Set the maximum battery charge power."""
 
-    def call(connection: GivEnergy) -> None:
+    def call(client: GivEnergyClient) -> None:
         target_value = int(data[_ATTR_POWER] / 64)
 
         # Numbering seems to stop at 39, then jump to 50 = 2.6kW
@@ -133,7 +151,30 @@ async def _async_set_charge_power_limit(
             "Setting battery charge limit to %d (%dW)", target_value, data[_ATTR_POWER]
         )
 
-        connection.client.set_battery_charge_limit(target_value)
+        client.set_battery_charge_limit(target_value)
+
+    await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
+
+
+async def _async_set_discharge_power_limit(
+    hass: HomeAssistant, data: dict[str, Any]
+) -> None:
+    """Set the maximum battery discharge power."""
+
+    def call(client: GivEnergyClient) -> None:
+        target_value = int(data[_ATTR_POWER] / 64)
+
+        # Numbering seems to stop at 39, then jump to 50 = 2.6kW
+        if target_value > 39:
+            target_value = 50
+
+        LOGGER.debug(
+            "Setting battery discharge limit to %d (%dW)",
+            target_value,
+            data[_ATTR_POWER],
+        )
+
+        client.set_battery_discharge_limit(target_value)
 
     await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
 
@@ -141,9 +182,26 @@ async def _async_set_charge_power_limit(
 async def _async_activate_mode_eco(hass: HomeAssistant, data: dict[str, Any]) -> None:
     """Activate 'Eco' mode, as found in the GivEnergy portal."""
 
-    def call(connection: GivEnergy) -> None:
+    def call(client: GivEnergyClient) -> None:
         LOGGER.debug("Activating eco mode")
-        connection.client.set_mode_dynamic()
+        client.set_mode_dynamic()
+
+    await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
+
+
+async def _async_activate_mode_timed_discharge(
+    hass: HomeAssistant, data: dict[str, Any]
+) -> None:
+    """Activate 'Timed Discharge' mode, as found in the GivEnergy portal."""
+
+    def call(client: GivEnergyClient) -> None:
+        start_time = datetime.time.fromisoformat(data[_ATTR_START_TIME])
+        end_time = datetime.time.fromisoformat(data[_ATTR_END_TIME])
+
+        LOGGER.debug(
+            "Activating timed discharge mode between %s and %s", start_time, end_time
+        )
+        client.set_mode_storage((start_time, end_time), export=False)
 
     await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
 
@@ -153,13 +211,13 @@ async def _async_activate_mode_timed_export(
 ) -> None:
     """Activate 'Timed Export' mode, as found in the GivEnergy portal."""
 
-    def call(connection: GivEnergy) -> None:
+    def call(client: GivEnergyClient) -> None:
         start_time = datetime.time.fromisoformat(data[_ATTR_START_TIME])
         end_time = datetime.time.fromisoformat(data[_ATTR_END_TIME])
 
         LOGGER.debug(
             "Activating timed export mode between %s and %s", start_time, end_time
         )
-        connection.client.set_mode_storage((start_time, end_time), export=True)
+        client.set_mode_storage((start_time, end_time), export=True)
 
     await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
