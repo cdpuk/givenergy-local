@@ -1,6 +1,7 @@
 """GivEnergy services."""
+import asyncio
 import datetime
-from typing import Any
+from typing import Any, Callable
 
 from homeassistant.const import ATTR_DEVICE_ID
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -10,6 +11,12 @@ import voluptuous as vol
 from custom_components.givenergy_local.givenergy import GivEnergy
 
 from .const import DOMAIN, LOGGER
+
+# A bit of a workaround for flaky modbus connections.
+# We try to call services a few times, and only allow the exception to escape after we've
+# made this many attempts.
+_MAX_ATTEMPTS = 5
+_DELAY_BETWEEN_ATTEMPTS = 2.0
 
 _ATTR_POWER = "power"
 _ATTR_START_TIME = "start_time"
@@ -81,17 +88,41 @@ async def _async_get_config_entries(hass: HomeAssistant, device_id: str) -> set[
 
     entries: set[str] = set()
     if inverter_device_entry:
-        entries = inverter_device_entry.config_entries
+        entries = inverter_device_entry.config_entries.copy()
 
     return entries
+
+
+async def _async_service_call(
+    hass: HomeAssistant, device_id: str, func: Callable[[GivEnergy], None]
+) -> None:
+    # Just take the first matching config entry
+    # We really shouldn't have multiple entries for the same device ID
+    entries = await _async_get_config_entries(hass, device_id)
+    if not entries:
+        return
+
+    config_entry = entries.pop()
+    attempts = _MAX_ATTEMPTS
+
+    while attempts > 0:
+        LOGGER.debug("Attempting service call (%d attempts left)", attempts)
+        connection: GivEnergy = hass.data[DOMAIN][config_entry].connection
+        try:
+            await hass.async_add_executor_job(func, connection)
+            break
+        except AssertionError as err:
+            LOGGER.error("Service call failed %s", err)
+            attempts = attempts - 1
+            await asyncio.sleep(_DELAY_BETWEEN_ATTEMPTS)
 
 
 async def _async_set_charge_power_limit(
     hass: HomeAssistant, data: dict[str, Any]
 ) -> None:
     """Set the maximum battery charge power."""
-    for config_entry in await _async_get_config_entries(hass, data[ATTR_DEVICE_ID]):
-        connection: GivEnergy = hass.data[DOMAIN][config_entry].connection
+
+    def call(connection: GivEnergy) -> None:
         target_value = int(data[_ATTR_POWER] / 64)
 
         # Numbering seems to stop at 39, then jump to 50 = 2.6kW
@@ -101,23 +132,28 @@ async def _async_set_charge_power_limit(
         LOGGER.debug(
             "Setting battery charge limit to %d (%dW)", target_value, data[_ATTR_POWER]
         )
+
         connection.client.set_battery_charge_limit(target_value)
+
+    await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
 
 
 async def _async_activate_mode_eco(hass: HomeAssistant, data: dict[str, Any]) -> None:
     """Activate 'Eco' mode, as found in the GivEnergy portal."""
-    for config_entry in await _async_get_config_entries(hass, data[ATTR_DEVICE_ID]):
-        connection: GivEnergy = hass.data[DOMAIN][config_entry].connection
+
+    def call(connection: GivEnergy) -> None:
         LOGGER.debug("Activating eco mode")
         connection.client.set_mode_dynamic()
+
+    await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
 
 
 async def _async_activate_mode_timed_export(
     hass: HomeAssistant, data: dict[str, Any]
 ) -> None:
     """Activate 'Timed Export' mode, as found in the GivEnergy portal."""
-    for config_entry in await _async_get_config_entries(hass, data[ATTR_DEVICE_ID]):
-        connection: GivEnergy = hass.data[DOMAIN][config_entry].connection
+
+    def call(connection: GivEnergy) -> None:
         start_time = datetime.time.fromisoformat(data[_ATTR_START_TIME])
         end_time = datetime.time.fromisoformat(data[_ATTR_END_TIME])
 
@@ -125,3 +161,5 @@ async def _async_activate_mode_timed_export(
             "Activating timed export mode between %s and %s", start_time, end_time
         )
         connection.client.set_mode_storage((start_time, end_time), export=True)
+
+    await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
