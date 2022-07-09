@@ -9,31 +9,7 @@ This custom component provides local access to GivEnergy inverters via Modbus. T
 
 ## Device Support
 
-Model | Status
--- | --
-Giv-HY5.0 | Tested by maintainer (battery support pending installation)
-
-Modbus support is provided by the [`givenergy-modbus`][givenergy-modbus] library. If other devices are found to have issues, it's likely that changes will need to be made to the underlying library.
-
-## Sensors
-
-The integraton provides the following sensors:
-
-* PV Energy Total (kWh)
-* PV Energy Today (kWh)
-* PV Power (W)
-* Grid Import Today (kWh)
-* Grid Export Today (kWh)
-* Grid Export Power (W, negative values indicating import)
-* Inverter Output Today (kWh)
-* Inverter Output Total (kWh)
-* Consumption Total (kWh)
-* Consumption Today (kWh)
-* Consumption Power (W)
-* AC Voltage (V)
-* AC Frequency (Hz)
-* Heatsink Temperature (C)
-* Charger Temperature (C)
+Modbus support is provided by the [`givenergy-modbus`][givenergy-modbus] library. While this works well for the vast majority of GivEnergy inverters and batteries, inevitably there will be edge cases and new kit that requires updates to either this integration or the underlying library.
 
 ## Installation
 
@@ -73,7 +49,7 @@ In the above snippet, you need to replace `<system-id>` and `api-key` with value
 
 Configure an automation as follows:
 
-* Trigger: Time pattern with minutes set to `/5`, `/10` or `/15` to match your PVOutput expected reporting interval. Note that since the inverter only reports energy in 0.1kWh intervals, longer intervals tend to work better, especially in overcast conditions when total energy may not increment over a short period.
+* Trigger: Time pattern with minutes set to `/5`, `/10` or `/15` to match your PVOutput expected reporting interval. Note that since the inverter only reports energy with 0.1kWh precision, longer intervals tend to work better, especially in overcast conditions when total energy may not increment over a short period.
 * Conditions: Optionally, configure a State condition for the Sun entity with a value `above_horizon`. This trims off uninteresting parts of the day in your PVOutput logs and charts.
 * Action: Set this to "Call service" and find "Shell Command: pvoutputcurl".
 
