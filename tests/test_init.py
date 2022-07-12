@@ -4,7 +4,6 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.givenergy_local import (
-    GivEnergyUpdateCoordinator,
     async_migrate_entry,
     async_reload_entry,
     async_setup_entry,
@@ -15,6 +14,7 @@ from custom_components.givenergy_local.const import (
     CONF_NUM_BATTERIES,
     DOMAIN,
 )
+from custom_components.givenergy_local.coordinator import GivEnergyUpdateCoordinator
 
 from .const import MOCK_CONFIG
 

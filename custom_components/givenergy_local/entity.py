@@ -4,8 +4,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import GivEnergyUpdateCoordinator
 from .const import DOMAIN, MANUFACTURER
+from .coordinator import GivEnergyUpdateCoordinator
 
 
 class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):

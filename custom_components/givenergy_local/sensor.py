@@ -27,8 +27,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
-from . import GivEnergyUpdateCoordinator
 from .const import DOMAIN, LOGGER
+from .coordinator import GivEnergyUpdateCoordinator
 from .entity import BatteryEntity, InverterEntity
 
 

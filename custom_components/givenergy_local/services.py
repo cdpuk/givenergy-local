@@ -1,6 +1,7 @@
 """GivEnergy services."""
 import asyncio
 import datetime
+
 from typing import Any, Callable
 
 from givenergy_modbus.client import GivEnergyClient
@@ -9,9 +10,8 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import device_registry as dr
 import voluptuous as vol
 
-from custom_components.givenergy_local.givenergy import GivEnergy
-
 from .const import DOMAIN, LOGGER
+from .coordinator import GivEnergyUpdateCoordinator
 
 # A bit of a workaround for flaky modbus connections.
 # We try to call services a few times, and only allow the exception to escape after we've
@@ -121,11 +121,12 @@ async def _async_service_call(
 
     while attempts > 0:
         LOGGER.debug("Attempting service call (%d attempts left)", attempts)
-        ge: GivEnergy = hass.data[DOMAIN][config_entry].connection
-        client = GivEnergyClient(ge.host)
+        coordinator: GivEnergyUpdateCoordinator = hass.data[DOMAIN][config_entry]
+        client = GivEnergyClient(coordinator.host)
 
         try:
             await hass.async_add_executor_job(func, client)
+            await coordinator.async_request_full_refresh()
             break
         except AssertionError as err:
             LOGGER.error("Service call failed %s", err)
