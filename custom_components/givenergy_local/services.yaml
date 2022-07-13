@@ -71,11 +71,13 @@ activate_mode_timed_discharge:
           integration: givenergy_local
     start_time:
       name: Start time
+      description:
       required: true
       selector:
         time:
     end_time:
       name: End time
+      description:
       required: true
       selector:
         time:
