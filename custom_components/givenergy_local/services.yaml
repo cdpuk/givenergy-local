@@ -5,6 +5,7 @@ set_charge_limit:
   fields:
     device_id:
       name: Inverter
+      description: The inverter to control
       required: true
       selector:
         device:
@@ -27,6 +28,7 @@ set_discharge_limit:
   fields:
     device_id:
       name: Inverter
+      description: The inverter to control
       required: true
       selector:
         device:
@@ -51,7 +53,7 @@ activate_mode_eco:
   fields:
     device_id:
       name: Device
-      description: Inverter to control
+      description: The inverter to control
       required: true
       selector:
         device:
@@ -89,7 +91,7 @@ activate_mode_timed_export:
   fields:
     device_id:
       name: Device
-      description: Inverter to control
+      description: The inverter to control
       required: true
       selector:
         device:
