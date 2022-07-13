@@ -27,8 +27,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
-from . import GivEnergyUpdateCoordinator
 from .const import DOMAIN, LOGGER
+from .coordinator import GivEnergyUpdateCoordinator
 from .entity import BatteryEntity, InverterEntity
 
 
@@ -227,6 +227,12 @@ _CONSUMPTION_TOTAL_SENSOR = SensorEntityDescription(
     native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
 )
 
+_BATTERY_MODE_SENSOR = SensorEntityDescription(
+    key="battery_mode_description",
+    name="Battery Mode",
+    icon=Icon.Battery,
+)
+
 _BATTERY_CHARGE_LIMIT_SENSOR = SensorEntityDescription(
     key="battery_charge_limit",
     name="Battery Charge Power Limit",
@@ -293,6 +299,9 @@ async def async_setup_entry(
             ),
             ConsumptionTotalSensor(
                 coordinator, config_entry, entity_description=_CONSUMPTION_TOTAL_SENSOR
+            ),
+            BatteryModeSensor(
+                coordinator, config_entry, entity_description=_BATTERY_MODE_SENSOR
             ),
             BatteryChargeLimitSensor(
                 coordinator,
@@ -389,6 +398,32 @@ class ConsumptionTotalSensor(InverterBasicSensor):
             + self.coordinator.data.inverter.e_grid_in_total
             - self.coordinator.data.inverter.e_grid_out_total
         )
+
+
+class BatteryModeSensor(InverterBasicSensor):
+    """Battery mdoe sensor."""
+
+    @property
+    def native_value(self) -> StateType:
+        """Determine the mode based on various settings."""
+
+        # battery_power_mode:
+        # 0: export/max
+        # 1: demand/self-consumption
+        battery_power_mode = self.data.battery_power_mode
+        battery_soc_reserve = self.data.battery_soc_reserve
+        enable_discharge = self.data.enable_discharge
+
+        if battery_power_mode == 1 and battery_soc_reserve == 4:
+            return "Eco"
+
+        if enable_discharge is True and battery_soc_reserve == 100:
+            if battery_power_mode == 1:
+                return "Timed Discharge"
+            else:
+                return "Timed Export"
+
+        return "Unknown"
 
 
 class BatteryChargeLimitSensor(InverterBasicSensor):

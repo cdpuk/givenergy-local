@@ -11,6 +11,12 @@ This custom component provides local access to GivEnergy inverters via Modbus. T
 
 Modbus support is provided by the [`givenergy-modbus`][givenergy-modbus] library. While this works well for the vast majority of GivEnergy inverters and batteries, inevitably there will be edge cases and new kit that requires updates to either this integration or the underlying library.
 
+## Services
+
+A number of services are provided to change settings by writing configuration values to your inverter. These operations map on to those provided by GivEnergy, such as turning on Eco mode, or changing charge/discharge rates.
+
+While the risk of something going wrong is low, bear in mind the use of this integration is entirely at your own risk.
+
 ## Installation
 
 This integration is delivered as a HACS custom repository.
@@ -21,7 +27,6 @@ This integration is delivered as a HACS custom repository.
 ## Configuration
 
 You need to know the hostname or IP address of your inverter, which you can normally work out by looking at your router status pages. When using an IP address that was issued with DHCP, bear in mind it needs to remain stable; this is normally fine since inverters stay connected 24/7.
-
 
 * Go to **Configuration** > **Devices & Services** > **Add Integration**, then find **GivEnergy Local** in the list.
 * Enter the inverter address when prompted.
