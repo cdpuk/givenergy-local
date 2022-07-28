@@ -518,4 +518,4 @@ class BatteryRemainingCapacitySensor(BatteryBasicSensor):
             self.data.battery_remaining_capacity * self.data.v_battery_cells_sum / 1000
         )
         # Warning: raw value seems to be Ah (Amp Hour)  so need to convert to KWh using formula AH * V / 1000
-        return battery_remaining_capacity
+        return round(battery_remaining_capacity, 3)
