@@ -38,6 +38,8 @@ class Icon(str, Enum):
     PV = "mdi:solar-power"
     AC = "mdi:power-plug-outline"
     Battery = "mdi:battery-high"
+    BatteryCycles = "mdi:swap-vertical"
+    BatteryTemperature = "mdi:thermometer"
     BatteryMinus = "mdi:battery-minus"
     BatteryPlus = "mdi:battery-plus"
     Inverter = "mdi:flash"
@@ -158,6 +160,13 @@ _BASIC_INVERTER_SENSORS = [
         native_unit_of_measurement=PERCENTAGE,
     ),
     SensorEntityDescription(
+        key="temp_battery",
+        name="Battery Temperature",
+        icon=Icon.BatteryTemperature,
+        state_class=STATE_CLASS_MEASUREMENT,
+        native_unit_of_measurement=TEMP_CELSIUS,
+    ),
+    SensorEntityDescription(
         key="v_ac1",
         name="Grid Voltage",
         icon=Icon.AC,
@@ -260,14 +269,28 @@ _BASIC_BATTERY_SENSORS = [
         native_unit_of_measurement=PERCENTAGE,
     ),
     SensorEntityDescription(
-        key="battery_remaining_capacity",
-        name="Battery Remaining Capacity",
+        key="battery_num_cycles",
+        name="Battery Cycles",
+        icon=Icon.BatteryCycles,
+        state_class=STATE_CLASS_TOTAL_INCREASING,
+    ),
+    SensorEntityDescription(
+        key="v_battery_cells_sum",
+        name="Battery Voltage",
         icon=Icon.Battery,
-        device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_MEASUREMENT,
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
     ),
 ]
+
+_BATTERY_REMAINING_CAPACITY_SENSOR = SensorEntityDescription(
+    key="battery_remaining_capacity",
+    name="Battery Remaining Capacity",
+    icon=Icon.Battery,
+    device_class=DEVICE_CLASS_ENERGY,
+    state_class=STATE_CLASS_MEASUREMENT,
+    native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+)
 
 
 async def async_setup_entry(
@@ -326,6 +349,17 @@ async def async_setup_entry(
                     coordinator, config_entry, entity_description, batt_num
                 )
                 for entity_description in _BASIC_BATTERY_SENSORS
+            )
+
+            async_add_entities(
+                [
+                    BatteryRemainingCapacitySensor(
+                        coordinator,
+                        config_entry,
+                        entity_description=_BATTERY_REMAINING_CAPACITY_SENSOR,
+                        battery_id=batt_num,
+                    )
+                ]
             )
         else:
             LOGGER.warning("Ignoring battery %d due to missing serial number", batt_num)
@@ -422,7 +456,6 @@ class BatteryModeSensor(InverterBasicSensor):
                 return "Timed Discharge"
             else:
                 return "Timed Export"
-
         return "Unknown"
 
 
@@ -473,3 +506,16 @@ class BatteryBasicSensor(BatteryEntity, SensorEntity):
     def native_value(self) -> StateType:
         """Return the register value as referenced by the 'key' property of the associated entity description."""
         return self.data.dict().get(self.entity_description.key)
+
+
+class BatteryRemainingCapacitySensor(BatteryBasicSensor):
+    """Battery remaining capacity sensor."""
+
+    @property
+    def native_value(self) -> StateType:
+        """Map the low-level Ah value to energy in KWh."""
+        battery_remaining_capacity = (
+            self.data.battery_remaining_capacity * self.data.v_battery_cells_sum / 1000
+        )
+        # Warning: raw value seems to be Ah (Amp Hour)  so need to convert to KWh using formula AH * V / 1000
+        return battery_remaining_capacity
