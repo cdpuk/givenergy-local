@@ -37,15 +37,16 @@ class Icon(str, Enum):
 
     PV = "mdi:solar-power"
     AC = "mdi:power-plug-outline"
-    Battery = "mdi:battery-high"
-    BatteryCycles = "mdi:swap-vertical"
-    BatteryTemperature = "mdi:thermometer"
-    BatteryMinus = "mdi:battery-minus"
-    BatteryPlus = "mdi:battery-plus"
-    Inverter = "mdi:flash"
-    GridImport = "mdi:transmission-tower-export"
-    GridExport = "mdi:transmission-tower-import"
-    Temperature = "mdi:thermometer"
+    BATTERY = "mdi:battery-high"
+    BATTERY_CYCLES = "mdi:battery-sync"
+    BATTERY_TEMPERATURE = "mdi:thermometer"
+    BATTERY_MINUS = "mdi:battery-minus"
+    BATTERY_PLUS = "mdi:battery-plus"
+    INVERTER = "mdi:flash"
+    GRID_IMPORT = "mdi:transmission-tower-export"
+    GRID_EXPORT = "mdi:transmission-tower-import"
+    EPS = "mdi:transmission-tower-off"
+    TEMPERATURE = "mdi:thermometer"
 
 
 _BASIC_INVERTER_SENSORS = [
@@ -76,7 +77,7 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="e_grid_in_day",
         name="Grid Import Today",
-        icon=Icon.GridImport,
+        icon=Icon.GRID_IMPORT,
         device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_TOTAL_INCREASING,
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
@@ -84,7 +85,7 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="e_grid_out_day",
         name="Grid Export Today",
-        icon=Icon.GridExport,
+        icon=Icon.GRID_EXPORT,
         device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_TOTAL_INCREASING,
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
@@ -92,7 +93,7 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="e_inverter_out_day",
         name="Inverter Output Today",
-        icon=Icon.Inverter,
+        icon=Icon.INVERTER,
         device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_TOTAL_INCREASING,
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
@@ -100,7 +101,7 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="e_inverter_out_total",
         name="Inverter Output Total",
-        icon=Icon.Inverter,
+        icon=Icon.INVERTER,
         device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_TOTAL_INCREASING,
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
@@ -108,7 +109,7 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="e_battery_charge_day",
         name="Battery Charge Today",
-        icon=Icon.Battery,
+        icon=Icon.BATTERY,
         device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_TOTAL_INCREASING,
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
@@ -116,7 +117,7 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="e_battery_discharge_day",
         name="Battery Discharge Today",
-        icon=Icon.Battery,
+        icon=Icon.BATTERY,
         device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_TOTAL_INCREASING,
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
@@ -124,7 +125,7 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="e_battery_throughput_total",
         name="Battery Throughput Total",
-        icon=Icon.Battery,
+        icon=Icon.BATTERY,
         device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_TOTAL_INCREASING,
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
@@ -140,7 +141,7 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="p_grid_out",
         name="Grid Export Power",
-        icon=Icon.GridExport,
+        icon=Icon.GRID_EXPORT,
         device_class=DEVICE_CLASS_POWER,
         state_class=STATE_CLASS_MEASUREMENT,
         native_unit_of_measurement=POWER_WATT,
@@ -148,7 +149,15 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="p_battery",
         name="Battery Power",
-        icon=Icon.Battery,
+        icon=Icon.BATTERY,
+        device_class=DEVICE_CLASS_POWER,
+        state_class=STATE_CLASS_MEASUREMENT,
+        native_unit_of_measurement=POWER_WATT,
+    ),
+    SensorEntityDescription(
+        key="p_eps_backup",
+        name="Inverter EPS Backup Power",
+        icon=Icon.EPS,
         device_class=DEVICE_CLASS_POWER,
         state_class=STATE_CLASS_MEASUREMENT,
         native_unit_of_measurement=POWER_WATT,
@@ -156,13 +165,13 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="battery_percent",
         name="Battery Percent",
-        icon=Icon.Battery,
+        icon=Icon.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
     ),
     SensorEntityDescription(
         key="temp_battery",
         name="Battery Temperature",
-        icon=Icon.BatteryTemperature,
+        icon=Icon.BATTERY_TEMPERATURE,
         state_class=STATE_CLASS_MEASUREMENT,
         native_unit_of_measurement=TEMP_CELSIUS,
     ),
@@ -185,7 +194,7 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="temp_inverter_heatsink",
         name="Inverter Heatsink Temperature",
-        icon=Icon.Temperature,
+        icon=Icon.TEMPERATURE,
         device_class=DEVICE_CLASS_TEMPERATURE,
         state_class=STATE_CLASS_MEASUREMENT,
         native_unit_of_measurement=TEMP_CELSIUS,
@@ -193,7 +202,7 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="temp_charger",
         name="Inverter Charger Temperature",
-        icon=Icon.Temperature,
+        icon=Icon.TEMPERATURE,
         device_class=DEVICE_CLASS_TEMPERATURE,
         state_class=STATE_CLASS_MEASUREMENT,
         native_unit_of_measurement=TEMP_CELSIUS,
@@ -239,13 +248,13 @@ _CONSUMPTION_TOTAL_SENSOR = SensorEntityDescription(
 _BATTERY_MODE_SENSOR = SensorEntityDescription(
     key="battery_mode_description",
     name="Battery Mode",
-    icon=Icon.Battery,
+    icon=Icon.BATTERY,
 )
 
 _BATTERY_CHARGE_LIMIT_SENSOR = SensorEntityDescription(
     key="battery_charge_limit",
     name="Battery Charge Power Limit",
-    icon=Icon.BatteryPlus,
+    icon=Icon.BATTERY_PLUS,
     device_class=DEVICE_CLASS_POWER,
     state_class=STATE_CLASS_MEASUREMENT,
     native_unit_of_measurement=POWER_WATT,
@@ -254,7 +263,7 @@ _BATTERY_CHARGE_LIMIT_SENSOR = SensorEntityDescription(
 _BATTERY_DISCHARGE_LIMIT_SENSOR = SensorEntityDescription(
     key="battery_discharge_limit",
     name="Battery Discharge Power Limit",
-    icon=Icon.BatteryMinus,
+    icon=Icon.BATTERY_MINUS,
     device_class=DEVICE_CLASS_POWER,
     state_class=STATE_CLASS_MEASUREMENT,
     native_unit_of_measurement=POWER_WATT,
@@ -264,20 +273,20 @@ _BASIC_BATTERY_SENSORS = [
     SensorEntityDescription(
         key="battery_soc",
         name="Battery Charge",
-        icon=Icon.Battery,
+        icon=Icon.BATTERY,
         state_class=STATE_CLASS_MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
     ),
     SensorEntityDescription(
         key="battery_num_cycles",
         name="Battery Cycles",
-        icon=Icon.BatteryCycles,
+        icon=Icon.BATTERY_CYCLES,
         state_class=STATE_CLASS_TOTAL_INCREASING,
     ),
     SensorEntityDescription(
         key="v_battery_cells_sum",
         name="Battery Voltage",
-        icon=Icon.Battery,
+        icon=Icon.BATTERY,
         state_class=STATE_CLASS_MEASUREMENT,
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
     ),
@@ -286,7 +295,7 @@ _BASIC_BATTERY_SENSORS = [
 _BATTERY_REMAINING_CAPACITY_SENSOR = SensorEntityDescription(
     key="battery_remaining_capacity",
     name="Battery Remaining Capacity",
-    icon=Icon.Battery,
+    icon=Icon.BATTERY,
     device_class=DEVICE_CLASS_ENERGY,
     state_class=STATE_CLASS_MEASUREMENT,
     native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
@@ -513,9 +522,10 @@ class BatteryRemainingCapacitySensor(BatteryBasicSensor):
 
     @property
     def native_value(self) -> StateType:
-        """Map the low-level Ah value to energy in KWh."""
+        """Map the low-level Ah value to energy in kWh."""
         battery_remaining_capacity = (
             self.data.battery_remaining_capacity * self.data.v_battery_cells_sum / 1000
         )
-        # Warning: raw value seems to be Ah (Amp Hour)  so need to convert to KWh using formula AH * V / 1000
+        # Raw value is in Ah (Amp Hour)
+        # Convert to KWh using formula Ah * V / 1000
         return round(battery_remaining_capacity, 3)
