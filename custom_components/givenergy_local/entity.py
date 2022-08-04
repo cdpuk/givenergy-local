@@ -7,6 +7,15 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, MANUFACTURER
 from .coordinator import GivEnergyUpdateCoordinator
 
+# Maps battery design capacities (as seen under 'battery_design_capacity_2') to model names.
+# Keys should match the values seen in the datasheets.
+_BATTERY_CAPACITY_TO_MODEL = {
+    51: "Giv-Bat-ECO 2.6",
+    102: "Giv-Bat 5.2",
+    160: "Giv-Bat 8.2",
+    186: "Giv-Bat 9.5",
+}
+
 
 class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     """An entity that derives data from a GivEnergy inverter."""
@@ -66,13 +75,11 @@ class BatteryEntity(CoordinatorEntity[Plant]):
     def device_info(self) -> DeviceInfo:
         """Battery device information for the entity."""
 
-        battery_cap = str(self.data.battery_design_capacity)
-
         return DeviceInfo(
             identifiers={(DOMAIN, self.data.battery_serial_number)},
             name="Battery",
             manufacturer=MANUFACTURER,
-            model=self._get_battery_model_from_capacity(battery_cap),
+            model=self.battery_model,
             sw_version=str(self.data.bms_firmware_version),
             configuration_url="https://givenergy.cloud",
             via_device=(DOMAIN, self.coordinator.data.inverter.inverter_serial_number),
@@ -88,17 +95,18 @@ class BatteryEntity(CoordinatorEntity[Plant]):
         """Return True if the inverter is online."""
         return self.coordinator.last_update_success  # type: ignore[no-any-return]
 
-    @staticmethod
-    def _get_battery_model_from_capacity(capacity):
-        base_model_name = "GivBat"
-        if capacity is None:
-            return base_model_name
+    @property
+    def battery_model(self) -> str:
+        """
+        Get a battery model name based on the value from 'battery_design_capacity_2'.
 
-        capacity_parts = capacity.split(".", 1)
+        Unrecognised values are described with a capacity in Ah to allow these to be easily added
+        in a future release.
+        """
+        capacity = int(self.data.battery_design_capacity_2)
+        model_name = _BATTERY_CAPACITY_TO_MODEL.get(capacity)
 
-        if len(capacity_parts) > 0:
-            if capacity_parts[0] == "158":
-                return f"{base_model_name} 8.2"
-            if capacity_parts[0] == "99":
-                return f"{base_model_name} 5.2"
-        return base_model_name
+        if model_name is None:
+            model_name = f"Unknown ({capacity}Ah)"
+
+        return model_name
