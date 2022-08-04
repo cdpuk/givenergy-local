@@ -66,11 +66,14 @@ class BatteryEntity(CoordinatorEntity[Plant]):
     def device_info(self) -> DeviceInfo:
         """Battery device information for the entity."""
 
+        battery_cap = str(self.data.battery_design_capacity)
+
         return DeviceInfo(
             identifiers={(DOMAIN, self.data.battery_serial_number)},
             name="Battery",
             manufacturer=MANUFACTURER,
-            sw_version=self.data.bms_firmware_version,
+            model=self._get_battery_model_from_capacity(battery_cap),
+            sw_version=str(self.data.bms_firmware_version),
             configuration_url="https://givenergy.cloud",
             via_device=(DOMAIN, self.coordinator.data.inverter.inverter_serial_number),
         )
@@ -84,3 +87,18 @@ class BatteryEntity(CoordinatorEntity[Plant]):
     def available(self) -> bool:
         """Return True if the inverter is online."""
         return self.coordinator.last_update_success  # type: ignore[no-any-return]
+
+    @staticmethod
+    def _get_battery_model_from_capacity(capacity):
+        base_model_name = "GivBat"
+        if capacity is None:
+            return base_model_name
+
+        capacity_parts = capacity.split(".", 1)
+
+        if len(capacity_parts) > 0:
+            if capacity_parts[0] == "158":
+                return f"{base_model_name} 8.2"
+            if capacity_parts[0] == "99":
+                return f"{base_model_name} 5.2"
+        return base_model_name
