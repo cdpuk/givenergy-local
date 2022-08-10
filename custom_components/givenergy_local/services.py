@@ -22,32 +22,54 @@ _DELAY_BETWEEN_ATTEMPTS = 2.0
 _ATTR_POWER = "power"
 _ATTR_START_TIME = "start_time"
 _ATTR_END_TIME = "end_time"
+_ATTR_CHARGE_TARGET = "charge_target"
+
+# Shared schema used for setting charge/discharge power limits.
+_SET_POWER_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_DEVICE_ID): str,
+        vol.Required(_ATTR_POWER): vol.All(vol.Coerce(int), vol.Range(min=4, max=100)),
+    }
+)
+
+# Shared shema that typically defines a charging/discharging slot.
+_TIME_SPAN_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_DEVICE_ID): str,
+        vol.Required(_ATTR_START_TIME): str,
+        vol.Required(_ATTR_END_TIME): str,
+    }
+)
 
 _SERVICE_SET_CHARGE_LIMIT = "set_charge_limit"
-_SERVICE_SET_CHARGE_LIMIT_SCHEMA = vol.All(
-    vol.Schema({vol.Required(ATTR_DEVICE_ID): str, vol.Required(_ATTR_POWER): int})
-)
+_SERVICE_SET_CHARGE_LIMIT_SCHEMA = _SET_POWER_SCHEMA
 
 _SERVICE_SET_DISCHARGE_LIMIT = "set_discharge_limit"
-_SERVICE_SET_DISCHARGE_LIMIT_SCHEMA = _SERVICE_SET_CHARGE_LIMIT_SCHEMA
+_SERVICE_SET_DISCHARGE_LIMIT_SCHEMA = _SET_POWER_SCHEMA
 
 _SERVICE_ACTIVATE_ECO = "activate_mode_eco"
-_SERVICE_ACTIVATE_ECO_SCHEMA = vol.All(vol.Schema({vol.Required(ATTR_DEVICE_ID): str}))
+_SERVICE_ACTIVATE_ECO_SCHEMA = vol.Schema({vol.Required(ATTR_DEVICE_ID): str})
 
 _SERVICE_ACTIVATE_TIMED_DISCHARGE = "activate_mode_timed_discharge"
-_SERVICE_ACTIVATE_TIMED_DISCHARGE_SCHEMA = vol.All(
-    vol.Schema(
-        {
-            vol.Required(ATTR_DEVICE_ID): str,
-            vol.Required(_ATTR_START_TIME): str,
-            vol.Required(_ATTR_END_TIME): str,
-        }
-    )
-)
-
+_SERVICE_ACTIVATE_TIMED_DISCHARGE_SCHEMA = _TIME_SPAN_SCHEMA
 
 _SERVICE_ACTIVATE_TIMED_EXPORT = "activate_mode_timed_export"
-_SERVICE_ACTIVATE_TIMED_EXPORT_SCHEMA = _SERVICE_ACTIVATE_TIMED_DISCHARGE_SCHEMA
+_SERVICE_ACTIVATE_TIMED_EXPORT_SCHEMA = _TIME_SPAN_SCHEMA
+
+_SERVICE_ENABLE_TIMED_CHARGE = "enable_timed_charge"
+_SERVICE_ENABLE_TIMED_CHARGE_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_DEVICE_ID): str,
+        vol.Optional(_ATTR_START_TIME): str,
+        vol.Optional(_ATTR_END_TIME): str,
+        vol.Optional(_ATTR_CHARGE_TARGET): vol.All(
+            vol.Coerce(int), vol.Range(min=4, max=100)
+        ),
+    }
+)
+
+_SERVICE_DISABLE_TIMED_CHARGE = "disable_timed_charge"
+_SERVICE_DISABLE_TIMED_CHARGE_SCHEMA = vol.Schema({vol.Required(ATTR_DEVICE_ID): str})
 
 _SUPPORTED_SERVICES = [
     _SERVICE_SET_CHARGE_LIMIT,
@@ -55,6 +77,8 @@ _SUPPORTED_SERVICES = [
     _SERVICE_ACTIVATE_ECO,
     _SERVICE_ACTIVATE_TIMED_DISCHARGE,
     _SERVICE_ACTIVATE_TIMED_EXPORT,
+    _SERVICE_ENABLE_TIMED_CHARGE,
+    _SERVICE_DISABLE_TIMED_CHARGE,
 ]
 _SERVICE_TO_SCHEMA = {
     _SERVICE_SET_CHARGE_LIMIT: _SERVICE_SET_CHARGE_LIMIT_SCHEMA,
@@ -62,6 +86,8 @@ _SERVICE_TO_SCHEMA = {
     _SERVICE_ACTIVATE_ECO: _SERVICE_ACTIVATE_ECO_SCHEMA,
     _SERVICE_ACTIVATE_TIMED_DISCHARGE: _SERVICE_ACTIVATE_TIMED_DISCHARGE_SCHEMA,
     _SERVICE_ACTIVATE_TIMED_EXPORT: _SERVICE_ACTIVATE_TIMED_EXPORT_SCHEMA,
+    _SERVICE_ENABLE_TIMED_CHARGE: _SERVICE_ENABLE_TIMED_CHARGE_SCHEMA,
+    _SERVICE_DISABLE_TIMED_CHARGE: _SERVICE_DISABLE_TIMED_CHARGE_SCHEMA,
 }
 
 
@@ -74,6 +100,8 @@ def async_setup_services(hass: HomeAssistant) -> None:
         _SERVICE_ACTIVATE_ECO: _async_activate_mode_eco,
         _SERVICE_ACTIVATE_TIMED_DISCHARGE: _async_activate_mode_timed_discharge,
         _SERVICE_ACTIVATE_TIMED_EXPORT: _async_activate_mode_timed_export,
+        _SERVICE_ENABLE_TIMED_CHARGE: _async_enable_timed_charge,
+        _SERVICE_DISABLE_TIMED_CHARGE: _async_disable_timed_charge,
     }
 
     async def async_call_service(service_call: ServiceCall) -> None:
@@ -220,5 +248,41 @@ async def _async_activate_mode_timed_export(
             "Activating timed export mode between %s and %s", start_time, end_time
         )
         client.set_mode_storage((start_time, end_time), export=True)
+
+    await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
+
+
+async def _async_enable_timed_charge(hass: HomeAssistant, data: dict[str, Any]) -> None:
+    """
+    Enable 'Timed Charge', as found in the GivEnergy portal.
+
+    Note that this isn't a battery mode like "Timed Discharge", "Eco", etc. It operates in
+    parallel to those modes.
+    """
+
+    def call(client: GivEnergyClient) -> None:
+        LOGGER.debug("Activating timed charge mode")
+
+        client.enable_charge()
+
+        if _ATTR_START_TIME in data and _ATTR_END_TIME in data:
+            start_time = datetime.time.fromisoformat(data[_ATTR_START_TIME])
+            end_time = datetime.time.fromisoformat(data[_ATTR_END_TIME])
+            client.set_charge_slot_1((start_time, end_time))
+
+        if _ATTR_CHARGE_TARGET in data:
+            client.set_battery_target_soc(data[_ATTR_CHARGE_TARGET])
+
+    await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
+
+
+async def _async_disable_timed_charge(
+    hass: HomeAssistant, data: dict[str, Any]
+) -> None:
+    """Disable 'Timed Charge', as found in the GivEnergy portal."""
+
+    def call(client: GivEnergyClient) -> None:
+        LOGGER.debug("Deactivating timed charge mode")
+        client.disable_charge()
 
     await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
