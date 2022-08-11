@@ -28,7 +28,7 @@ _ATTR_CHARGE_TARGET = "charge_target"
 _SET_POWER_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_DEVICE_ID): str,
-        vol.Required(_ATTR_POWER): vol.All(vol.Coerce(int), vol.Range(min=4, max=100)),
+        vol.Required(_ATTR_POWER): vol.All(vol.Coerce(int), vol.Range(min=0, max=2600)),
     }
 )
 
