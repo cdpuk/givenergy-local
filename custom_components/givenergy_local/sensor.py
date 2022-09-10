@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from enum import Enum
 
+from givenergy_modbus.model.inverter import Model
 from homeassistant.components.sensor import (
     STATE_CLASS_MEASUREMENT,
     STATE_CLASS_TOTAL_INCREASING,
@@ -422,12 +423,21 @@ class ConsumptionTodaySensor(InverterBasicSensor):
 
     @property
     def native_value(self) -> StateType:
-        """Calculate consumption based on the inverter output plus net grid import."""
-        return (
-            self.coordinator.data.inverter.e_inverter_out_day
-            + self.coordinator.data.inverter.e_grid_in_day
-            - self.coordinator.data.inverter.e_grid_out_day
+        """Calculate consumption based on net inverter output plus net grid import."""
+
+        consumption_today = (
+            self.data.e_inverter_out_day
+            - self.data.e_inverter_in_day
+            + self.data.e_grid_in_day
+            - self.data.e_grid_out_day
         )
+
+        # For AC inverters, PV output doesn't count as part of the inverter output,
+        # so we need to add it on.
+        if self.data.inverter_model == Model.AC:
+            consumption_today += self.data.e_pv1_day + self.data.e_pv2_day
+
+        return consumption_today
 
 
 class ConsumptionTotalSensor(InverterBasicSensor):
@@ -435,12 +445,20 @@ class ConsumptionTotalSensor(InverterBasicSensor):
 
     @property
     def native_value(self) -> StateType:
-        """Calculate consumption based on the inverter output plus net grid import."""
-        return (
-            self.coordinator.data.inverter.e_inverter_out_total
-            + self.coordinator.data.inverter.e_grid_in_total
-            - self.coordinator.data.inverter.e_grid_out_total
+        """Calculate consumption based on net inverter output plus net grid import."""
+        consumption_total = (
+            self.data.e_inverter_out_total
+            - self.data.e_inverter_in_total
+            + self.data.e_grid_in_total
+            - self.data.e_grid_out_total
         )
+
+        # For AC inverters, PV output doesn't count as part of the inverter output,
+        # so we need to add it on.
+        if self.data.inverter_model == Model.AC:
+            consumption_total += self.data.e_pv_total
+
+        return consumption_total
 
 
 class BatteryModeSensor(InverterBasicSensor):
