@@ -1,8 +1,6 @@
 """Home Assistant sensor descriptions."""
 from __future__ import annotations
 
-from enum import Enum
-
 from givenergy_modbus.model.inverter import Model
 from homeassistant.components.sensor import (
     STATE_CLASS_MEASUREMENT,
@@ -28,27 +26,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
-from .const import DOMAIN, LOGGER
+from .const import DOMAIN, LOGGER, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import BatteryEntity, InverterEntity
-
-
-class Icon(str, Enum):
-    """Icon styles."""
-
-    PV = "mdi:solar-power"
-    AC = "mdi:power-plug-outline"
-    BATTERY = "mdi:battery-high"
-    BATTERY_CYCLES = "mdi:battery-sync"
-    BATTERY_TEMPERATURE = "mdi:thermometer"
-    BATTERY_MINUS = "mdi:battery-minus"
-    BATTERY_PLUS = "mdi:battery-plus"
-    INVERTER = "mdi:flash"
-    GRID_IMPORT = "mdi:transmission-tower-export"
-    GRID_EXPORT = "mdi:transmission-tower-import"
-    EPS = "mdi:transmission-tower-off"
-    TEMPERATURE = "mdi:thermometer"
-
 
 _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
@@ -386,13 +366,15 @@ class InverterBasicSensor(InverterEntity, SensorEntity):
     ) -> None:
         """Initialize a sensor based on an entity description."""
         super().__init__(coordinator, config_entry)
-        self._attr_unique_id = f"{self.coordinator.data.inverter.inverter_serial_number}_{entity_description.key}"
+        self._attr_unique_id = (
+            f"{self.data.inverter_serial_number}_{entity_description.key}"
+        )
         self.entity_description = entity_description
 
     @property
     def native_value(self) -> StateType:
         """Return the register value as referenced by the 'key' property of the associated entity description."""
-        return self.coordinator.data.inverter.dict().get(self.entity_description.key)
+        return self.data.dict().get(self.entity_description.key)
 
 
 class PVEnergyTodaySensor(InverterBasicSensor):
@@ -401,10 +383,7 @@ class PVEnergyTodaySensor(InverterBasicSensor):
     @property
     def native_value(self) -> StateType:
         """Return the sum of energy generated across both PV strings."""
-        return (
-            self.coordinator.data.inverter.e_pv1_day
-            + self.coordinator.data.inverter.e_pv2_day
-        )
+        return self.data.e_pv1_day + self.data.e_pv2_day
 
 
 class PVPowerSensor(InverterBasicSensor):
@@ -413,9 +392,7 @@ class PVPowerSensor(InverterBasicSensor):
     @property
     def native_value(self) -> StateType:
         """Return the sum of power generated across both PV strings."""
-        return (
-            self.coordinator.data.inverter.p_pv1 + self.coordinator.data.inverter.p_pv2
-        )
+        return self.data.p_pv1 + self.data.p_pv2
 
 
 class ConsumptionTodaySensor(InverterBasicSensor):
@@ -492,7 +469,7 @@ class BatteryChargeLimitSensor(InverterBasicSensor):
     @property
     def native_value(self) -> StateType:
         """Map the low-level value to power in Watts."""
-        raw_value = self.coordinator.data.inverter.battery_charge_limit
+        raw_value = self.data.battery_charge_limit
 
         # Warning: value for batteries with max charge/discharge rates of 2.6kW
         # Different logic almost certainly required on other units
@@ -505,7 +482,7 @@ class BatteryDischargeLimitSensor(InverterBasicSensor):
     @property
     def native_value(self) -> StateType:
         """Map the low-level value to power in Watts."""
-        raw_value = self.coordinator.data.inverter.battery_discharge_limit
+        raw_value = self.data.battery_discharge_limit
 
         # Warning: value for batteries with max charge/discharge rates of 2.6kW
         # Different logic almost certainly required on other units
