@@ -23,7 +23,7 @@ _BASIC_INVERTER_BINARY_SENSORS = [
     BinarySensorEntityDescription(
         key="enable_charge",
         icon=Icon.BATTERY_PLUS,
-        name="AC Charging",
+        name="Battery AC Charging",
     )
 ]
 
@@ -31,22 +31,22 @@ _CHARGE_SLOT_BINARY_SENSORS = [
     BinarySensorEntityDescription(
         key="charge_slot_1",
         icon=Icon.BATTERY_PLUS,
-        name="Charge Slot 1",
+        name="Battery Charge Slot 1",
     ),
     BinarySensorEntityDescription(
         key="charge_slot_2",
         icon=Icon.BATTERY_PLUS,
-        name="Charge Slot 2",
+        name="Battery Charge Slot 2",
     ),
     BinarySensorEntityDescription(
         key="discharge_slot_1",
         icon=Icon.BATTERY_MINUS,
-        name="Discharge Slot 1",
+        name="Battery Discharge Slot 1",
     ),
     BinarySensorEntityDescription(
         key="discharge_slot_2",
         icon=Icon.BATTERY_MINUS,
-        name="Discharge Slot 2",
+        name="Battery Discharge Slot 2",
     ),
 ]
 

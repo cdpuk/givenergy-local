@@ -158,7 +158,7 @@ _BASIC_INVERTER_SENSORS = [
     ),
     SensorEntityDescription(
         key="charge_target_soc",
-        name="AC Charge Limit",
+        name="Battery AC Charge Limit",
         icon=Icon.BATTERY_PLUS,
         native_unit_of_measurement=PERCENTAGE,
     ),
