@@ -22,8 +22,8 @@ from .entity import InverterEntity
 _BASIC_INVERTER_BINARY_SENSORS = [
     BinarySensorEntityDescription(
         key="enable_charge",
-        icon=Icon.BATTERY,
-        name="AC Charge Enabled",
+        icon=Icon.BATTERY_PLUS,
+        name="AC Charging",
     )
 ]
 

@@ -90,7 +90,7 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="e_battery_charge_day",
         name="Battery Charge Today",
-        icon=Icon.BATTERY,
+        icon=Icon.BATTERY_PLUS,
         device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_TOTAL_INCREASING,
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
@@ -98,7 +98,7 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="e_battery_discharge_day",
         name="Battery Discharge Today",
-        icon=Icon.BATTERY,
+        icon=Icon.BATTERY_MINUS,
         device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_TOTAL_INCREASING,
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
@@ -155,6 +155,12 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.BATTERY_TEMPERATURE,
         state_class=STATE_CLASS_MEASUREMENT,
         native_unit_of_measurement=TEMP_CELSIUS,
+    ),
+    SensorEntityDescription(
+        key="charge_target_soc",
+        name="AC Charge Limit",
+        icon=Icon.BATTERY_PLUS,
+        native_unit_of_measurement=PERCENTAGE,
     ),
     SensorEntityDescription(
         key="v_ac1",
