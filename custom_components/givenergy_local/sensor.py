@@ -152,12 +152,6 @@ _BASIC_INVERTER_SENSORS = [
         native_unit_of_measurement=TEMP_CELSIUS,
     ),
     SensorEntityDescription(
-        key="charge_target_soc",
-        name="Battery AC Charge Limit",
-        icon=Icon.BATTERY_PLUS,
-        native_unit_of_measurement=PERCENTAGE,
-    ),
-    SensorEntityDescription(
         key="v_ac1",
         name="Grid Voltage",
         icon=Icon.AC,
