@@ -11,7 +11,6 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_point_in_time
 
@@ -88,7 +87,6 @@ class InverterBasicBinarySensor(InverterEntity, BinarySensorEntity):
         self._attr_unique_id = (
             f"{self.data.inverter_serial_number}_{entity_description.key}"
         )
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self.entity_description = entity_description
 
     @property
@@ -96,8 +94,7 @@ class InverterBasicBinarySensor(InverterEntity, BinarySensorEntity):
         """Return true if the binary sensor is on."""
         # Return the register value as referenced by the 'key' property of the
         # associated entity description.
-        value: bool = self.data.dict().get(self.entity_description.key)
-        return value
+        return self.data.dict().get(self.entity_description.key)  # type: ignore
 
 
 class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
@@ -117,7 +114,6 @@ class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
         self._attr_unique_id = (
             f"{self.data.inverter_serial_number}_{entity_description.key}"
         )
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self.entity_description = entity_description
 
     async def async_added_to_hass(self) -> None:
@@ -191,8 +187,7 @@ class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
     @property
     def slot(self) -> tuple[time, time]:
         """Get the slot definition."""
-        slot: tuple[time, time] = self.data.dict().get(self.entity_description.key)
-        return slot
+        return self.data.dict().get(self.entity_description.key)  # type: ignore
 
     @property
     def is_on(self) -> bool | None:
