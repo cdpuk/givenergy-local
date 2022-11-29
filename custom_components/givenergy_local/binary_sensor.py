@@ -18,14 +18,6 @@ from .const import DOMAIN, LOGGER, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import InverterEntity
 
-_BASIC_INVERTER_BINARY_SENSORS = [
-    BinarySensorEntityDescription(
-        key="enable_charge",
-        icon=Icon.BATTERY_PLUS,
-        name="Battery AC Charging",
-    )
-]
-
 _CHARGE_SLOT_BINARY_SENSORS = [
     BinarySensorEntityDescription(
         key="charge_slot_1",
@@ -58,43 +50,11 @@ async def async_setup_entry(
     """Add sensors for passed config_entry in HA."""
     coordinator: GivEnergyUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
-    # Add basic inverter sensors that map directly to registers.
-    async_add_entities(
-        InverterBasicBinarySensor(coordinator, config_entry, entity_description)
-        for entity_description in _BASIC_INVERTER_BINARY_SENSORS
-    )
-
     # Add inverter sensors for charge/discharge slots.
     async_add_entities(
         InverterChargeSlotBinarySensor(coordinator, config_entry, entity_description)
         for entity_description in _CHARGE_SLOT_BINARY_SENSORS
     )
-
-
-class InverterBasicBinarySensor(InverterEntity, BinarySensorEntity):
-    """A binary sensor that derives its value from the register values fetched from the inverter."""
-
-    entity_description: BinarySensorEntityDescription
-
-    def __init__(
-        self,
-        coordinator: GivEnergyUpdateCoordinator,
-        config_entry: ConfigEntry,
-        entity_description: BinarySensorEntityDescription,
-    ) -> None:
-        """Initialize a sensor based on an entity description."""
-        super().__init__(coordinator, config_entry)
-        self._attr_unique_id = (
-            f"{self.data.inverter_serial_number}_{entity_description.key}"
-        )
-        self.entity_description = entity_description
-
-    @property
-    def is_on(self) -> bool | None:
-        """Return true if the binary sensor is on."""
-        # Return the register value as referenced by the 'key' property of the
-        # associated entity description.
-        return self.data.dict().get(self.entity_description.key)  # type: ignore
 
 
 class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):

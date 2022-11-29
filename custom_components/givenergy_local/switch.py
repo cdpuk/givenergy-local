@@ -61,7 +61,6 @@ class InverterACChargingSwitch(InverterEntity, SwitchEntity):
             self.coordinator,
             enable_ac_charge,
         )
-        await self.coordinator.async_request_full_refresh()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Disable AC charging, subject to charge slot configuration."""
@@ -74,4 +73,3 @@ class InverterACChargingSwitch(InverterEntity, SwitchEntity):
             self.coordinator,
             disable_ac_charge,
         )
-        await self.coordinator.async_request_full_refresh()

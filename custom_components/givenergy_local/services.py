@@ -1,5 +1,4 @@
 """GivEnergy services."""
-import asyncio
 import datetime
 
 from typing import Any, Callable
@@ -12,6 +11,7 @@ import voluptuous as vol
 
 from .const import DOMAIN, LOGGER
 from .coordinator import GivEnergyUpdateCoordinator
+from .givenergy_ext import async_reliable_call
 
 # A bit of a workaround for flaky modbus connections.
 # We try to call services a few times, and only allow the exception to escape after we've
@@ -145,23 +145,8 @@ async def _async_service_call(
         return
 
     config_entry = entries.pop()
-    attempts = _MAX_ATTEMPTS
-
-    while attempts > 0:
-        LOGGER.debug("Attempting service call (%d attempts left)", attempts)
-        coordinator: GivEnergyUpdateCoordinator = hass.data[DOMAIN][config_entry]
-        client = GivEnergyClient(coordinator.host)
-
-        try:
-            await hass.async_add_executor_job(func, client)
-            await coordinator.async_request_full_refresh()
-            break
-        except AssertionError as err:
-            LOGGER.error("Service call failed %s", err)
-            attempts = attempts - 1
-            await asyncio.sleep(_DELAY_BETWEEN_ATTEMPTS)
-        finally:
-            client.modbus_client.close()
+    coordinator: GivEnergyUpdateCoordinator = hass.data[DOMAIN][config_entry]
+    await async_reliable_call(hass, coordinator, func)
 
 
 async def _async_set_charge_power_limit(

@@ -94,4 +94,3 @@ class ACChargeLimitNumber(InverterBasicNumber):
             self.coordinator,
             set_battery_target_soc,
         )
-        await self.coordinator.async_request_full_refresh()
