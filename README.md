@@ -31,6 +31,8 @@ You need to know the hostname or IP address of your inverter, which you can norm
 * Go to **Configuration** > **Devices & Services** > **Add Integration**, then find **GivEnergy Local** in the list.
 * Enter the inverter address when prompted.
 
+If your Home Assistant instance is in a different VLAN or network than inverter, ensure it can reach the inverter via port 8899 (TCP).
+
 ## PVOutput upload
 
 This integration provides data that can be used to upload system stats to [pvoutput.org](pvoutput.org).
