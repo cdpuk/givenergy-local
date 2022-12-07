@@ -86,11 +86,11 @@ class ACChargeLimitNumber(InverterBasicNumber):
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value."""
 
-        def set_battery_target_soc(client: GivEnergyClient) -> None:
-            client.set_battery_target_soc(int(value))
+        def enable_charge_target(client: GivEnergyClient) -> None:
+            client.enable_charge_target(int(value))
 
         await async_reliable_call(
             self.hass,
             self.coordinator,
-            set_battery_target_soc,
+            enable_charge_target,
         )
