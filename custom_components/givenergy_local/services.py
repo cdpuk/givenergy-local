@@ -256,7 +256,7 @@ async def _async_enable_timed_charge(hass: HomeAssistant, data: dict[str, Any]) 
             client.set_charge_slot_1((start_time, end_time))
 
         if _ATTR_CHARGE_TARGET in data:
-            client.set_battery_target_soc(data[_ATTR_CHARGE_TARGET])
+            client.enable_charge_target(data[_ATTR_CHARGE_TARGET])
 
     await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
 

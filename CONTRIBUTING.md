@@ -14,7 +14,7 @@ Github is used to host code, to track issues and feature requests, as well as ac
 Pull requests are the best way to propose changes to the codebase.
 
 1. Fork the repo and create your branch from `master`.
-2. Ensure `pre-commit` is set up before making any changes. Run `pre-commit install` to do this.
+2. Ensure your development and test environment is configured correctly (see below).
 3. If you've changed something, update the documentation.
 4. Test you contribution, and ensure any relevant tests have been updated.
 5. Open a pull request.
@@ -51,6 +51,19 @@ As mentioned above, the `pre-commit` hook will help enforce this.
 This repository is set up with support for Visual Studio Code development containers. After you've forked and opened the repository, VS Code will prompt you to reopen the project inside a container.
 
 This allows you to easily run the integration against an isolated Home Assistant instance.
+
+Once open in the devcontainer, install dev and test dependencies:
+
+```
+pip install -r requirements_dev.txt
+pip install -r requirements_test.txt
+```
+
+Then configure `pre-commit` checks:
+
+```
+pre-commit install
+```
 
 ## License
 
