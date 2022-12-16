@@ -1,6 +1,10 @@
 """Home Assistant sensor descriptions."""
 from __future__ import annotations
 
+from collections.abc import Mapping
+
+from typing import Any
+
 from givenergy_modbus.model.inverter import Model
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -121,6 +125,14 @@ _BASIC_INVERTER_SENSORS = [
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=POWER_WATT,
+    ),
+    SensorEntityDescription(
+        key="v_battery",
+        name="Battery Voltage",
+        icon=Icon.BATTERY,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
     ),
     SensorEntityDescription(
         key="p_battery",
@@ -260,8 +272,8 @@ _BASIC_BATTERY_SENSORS = [
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     SensorEntityDescription(
-        key="v_battery_cells_sum",
-        name="Battery Voltage",
+        key="v_battery_out",
+        name="Battery Output Voltage",
         icon=Icon.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
@@ -275,6 +287,14 @@ _BATTERY_REMAINING_CAPACITY_SENSOR = SensorEntityDescription(
     device_class=SensorDeviceClass.ENERGY,
     state_class=SensorStateClass.MEASUREMENT,
     native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+)
+
+_BATTERY_CELLS_VOLTAGE_SENSOR = SensorEntityDescription(
+    key="v_battery_cells_sum",
+    name="Battery Cells Voltage",
+    icon=Icon.BATTERY,
+    state_class=SensorStateClass.MEASUREMENT,
+    native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
 )
 
 
@@ -343,7 +363,13 @@ async def async_setup_entry(
                         config_entry,
                         entity_description=_BATTERY_REMAINING_CAPACITY_SENSOR,
                         battery_id=batt_num,
-                    )
+                    ),
+                    BatteryCellsVoltageSensor(
+                        coordinator,
+                        config_entry,
+                        entity_description=_BATTERY_CELLS_VOLTAGE_SENSOR,
+                        battery_id=batt_num,
+                    ),
                 ]
             )
         else:
@@ -434,7 +460,7 @@ class ConsumptionTotalSensor(InverterBasicSensor):
 
 
 class BatteryModeSensor(InverterBasicSensor):
-    """Battery mdoe sensor."""
+    """Battery mode sensor."""
 
     @property
     def native_value(self) -> StateType:
@@ -485,7 +511,12 @@ class BatteryDischargeLimitSensor(InverterBasicSensor):
 
 
 class BatteryBasicSensor(BatteryEntity, SensorEntity):
-    """A battery sensor that derives its value from the register values fetched from the inverter."""
+    """
+    A battery sensor that derives its value from the register values fetched from the inverter.
+
+    Values are as reported from the BMS in each battery. Sometimes there are differences in
+    values as reported by the inverter itself and the BMS.
+    """
 
     def __init__(
         self,
@@ -519,3 +550,12 @@ class BatteryRemainingCapacitySensor(BatteryBasicSensor):
         # Raw value is in Ah (Amp Hour)
         # Convert to KWh using formula Ah * V / 1000
         return round(battery_remaining_capacity, 3)
+
+
+class BatteryCellsVoltageSensor(BatteryBasicSensor):
+    """Battery cell voltage sensor."""
+
+    @property
+    def extra_state_attributes(self) -> Mapping[str, Any] | None:
+        """Expose individual cell voltages."""
+        return self.data.dict(include={f"v_battery_cell_{i:02d}" for i in range(1, 16)})  # type: ignore[no-any-return]
