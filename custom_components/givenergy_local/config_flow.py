@@ -17,11 +17,8 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 )
 
 
-async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> str:
-    """Validate the user input allows us to connect.
-
-    Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
-    """
+async def read_inverter_serial(hass: HomeAssistant, data: dict[str, Any]) -> str:
+    """Validate user input by reading the inverter serial number."""
     plant = Plant(number_batteries=data[CONF_NUM_BATTERIES])
     client = GivEnergyClient(data[CONF_HOST])
     async with async_timeout.timeout(10):
@@ -48,7 +45,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         errors = {}
 
         try:
-            serial_no = await validate_input(self.hass, user_input)
+            serial_no = await read_inverter_serial(self.hass, user_input)
         except Exception:  # pylint: disable=broad-except
             LOGGER.exception("Failed to validate inverter configuration")
             errors["base"] = "cannot_connect"
