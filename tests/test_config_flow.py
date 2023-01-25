@@ -28,7 +28,7 @@ def bypass_setup_fixture():
 def skip_validation():
     """Bypasses the validation step that attempts to read the serial number from the inverter."""
     with patch(
-        "custom_components.givenergy_local.config_flow.validate_input",
+        "custom_components.givenergy_local.config_flow.read_inverter_serial",
         return_value=_MOCK_SERIAL_NO,
     ):
         yield
@@ -38,7 +38,7 @@ def skip_validation():
 def error_get_data_fixture():
     """Simulate an error trying to read the serial number."""
     with patch(
-        "custom_components.givenergy_local.config_flow.validate_input",
+        "custom_components.givenergy_local.config_flow.read_inverter_serial",
         side_effect=Exception,
     ):
         yield
