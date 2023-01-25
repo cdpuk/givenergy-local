@@ -33,6 +33,14 @@ You need to know the hostname or IP address of your inverter, which you can norm
 
 If your Home Assistant instance is in a different VLAN or network than inverter, ensure it can reach the inverter via port 8899 (TCP).
 
+## Limitations
+
+The modbus connection used to communiate with GivEnergy inverters can be unreliable at times. This may be due to issues in the `givenergy_modbus` library, or the inverter firmware.
+
+The integration attempts to work around some of these errors, but there's only so much that can be done.
+
+If you see errors coming from the `givenergy_modbus` library, it's unlikely that anything can be done to this integration that will resolve the problem. Don't be offended if you bug report is closed in such cases.
+
 ## PVOutput upload
 
 This integration provides data that can be used to upload system stats to [pvoutput.org](pvoutput.org).
