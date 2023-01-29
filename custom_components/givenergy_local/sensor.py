@@ -301,7 +301,7 @@ _BATTERY_REMAINING_CAPACITY_SENSOR = SensorEntityDescription(
     name="Battery Remaining Capacity",
     icon=Icon.BATTERY,
     device_class=SensorDeviceClass.ENERGY,
-    state_class=SensorStateClass.MEASUREMENT,
+    state_class=SensorStateClass.TOTAL,
     native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
 )
 
