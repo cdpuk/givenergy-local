@@ -76,10 +76,18 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         # are zero. This is particularly painful when values are used in the energy dashboard,
         # as the dashboard double counts everything up to the point in the day when the figures
         # go back to normal. Work around this by detecting some extremely unlikely zero values.
-        heatsink_temp = self.plant.inverter.temp_inverter_heatsink
-        charger_temp = self.plant.inverter.temp_charger
-        if heatsink_temp == 0 and charger_temp == 0:
-            raise GivEnergyException("Zero values received")
+        inverter_data = self.plant.inverter
+
+        # The heatsink and charger temperatures never seem to go below around 10 celsius, even
+        # when idle and temperatures well below zero for an outdoor installation.
+        heatsink_temp = inverter_data.temp_inverter_heatsink
+        charger_temp = inverter_data.temp_charger
+        if heatsink_temp == 0 or charger_temp == 0:
+            raise GivEnergyException("Data discarded: improbable zero temperature")
+
+        # Total inverter output would only ever be zero prior to commissioning.
+        if inverter_data.e_inverter_out_total <= 0:
+            raise GivEnergyException("Data discarded: inverter total output <= 0")
 
     async def async_request_full_refresh(self) -> None:
         """Force a full update from the inverter."""
