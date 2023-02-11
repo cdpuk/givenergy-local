@@ -500,30 +500,38 @@ class BatteryModeSensor(InverterBasicSensor):
         return "Unknown"
 
 
-class BatteryChargeLimitSensor(InverterBasicSensor):
+class BatteryPowerLimitSensor(InverterBasicSensor):
+    """Battery power limit sensor for charging or discharging."""
+
+    def convert_raw_power_to_watts(self, raw_value: int) -> int:
+        """Convert an inverter register value to a power value in Watts."""
+        # Here be dragons.
+        # Interprets the raw value in the same way as the GivEnergy web portal.
+        # Step values are 81W up to 30*81=2430W.
+        # It's possible to write raw values of 31, 32 and 50 using the portal and/or
+        # app, but all of these are rendered as 2600W when read back in the portal.
+        # At time of writing, the official app uses a slightly different step value.
+        # Tested on a Gen 1 inverter with +/- 2.6kW max battery power; different logic
+        # almost certainly required on other units.
+        return 2600 if raw_value > 30 else raw_value * 81
+
+
+class BatteryChargeLimitSensor(BatteryPowerLimitSensor):
     """Battery charge limit sensor."""
 
     @property
     def native_value(self) -> StateType:
         """Map the low-level value to power in Watts."""
-        raw_value = self.data.battery_charge_limit
-
-        # Warning: value for batteries with max charge/discharge rates of 2.6kW
-        # Different logic almost certainly required on other units
-        return 2600 if raw_value == 50 else raw_value * 64
+        return self.convert_raw_power_to_watts(self.data.battery_charge_limit)
 
 
-class BatteryDischargeLimitSensor(InverterBasicSensor):
+class BatteryDischargeLimitSensor(BatteryPowerLimitSensor):
     """Battery discharge limit sensor."""
 
     @property
     def native_value(self) -> StateType:
         """Map the low-level value to power in Watts."""
-        raw_value = self.data.battery_discharge_limit
-
-        # Warning: value for batteries with max charge/discharge rates of 2.6kW
-        # Different logic almost certainly required on other units
-        return 2600 if raw_value == 50 else raw_value * 64
+        return self.convert_raw_power_to_watts(self.data.battery_discharge_limit)
 
 
 class BatteryBasicSensor(BatteryEntity, SensorEntity):
