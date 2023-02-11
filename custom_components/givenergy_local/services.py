@@ -155,10 +155,11 @@ async def _async_set_charge_power_limit(
     """Set the maximum battery charge power."""
 
     def call(client: GivEnergyClient) -> None:
-        target_value = int(data[_ATTR_POWER] / 64)
+        target_value = int(data[_ATTR_POWER] / 81)
 
-        # Numbering seems to stop at 39, then jump to 50 = 2.6kW
-        if target_value > 39:
+        # Numbering seems to stop at 30, then jump to 50 = 2.6kW
+        # See extensive comments in the corresponding sensor
+        if target_value > 30:
             target_value = 50
 
         LOGGER.debug(
@@ -176,10 +177,11 @@ async def _async_set_discharge_power_limit(
     """Set the maximum battery discharge power."""
 
     def call(client: GivEnergyClient) -> None:
-        target_value = int(data[_ATTR_POWER] / 64)
+        target_value = int(data[_ATTR_POWER] / 81)
 
-        # Numbering seems to stop at 39, then jump to 50 = 2.6kW
-        if target_value > 39:
+        # Numbering seems to stop at 30, then jump to 50 = 2.6kW
+        # See extensive comments in the corresponding sensor
+        if target_value > 30:
             target_value = 50
 
         LOGGER.debug(
