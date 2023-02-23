@@ -1,20 +1,17 @@
 {
   "domain": "givenergy_local",
   "name": "GivEnergy Local",
-  "version": "0.0.3",
+  "codeowners": [
+    "@cdpuk"
+  ],
   "config_flow": true,
+  "dependencies": [],
   "documentation": "https://github.com/cdpuk/givenergy-local",
+  "integration_type": "hub",
+  "iot_class": "local_polling",
   "issue_tracker": "https://github.com/cdpuk/givenergy-local/issues",
   "requirements": [
     "givenergy-modbus==0.10.1"
   ],
-  "ssdp": [],
-  "zeroconf": [],
-  "dhcp": [],
-  "homekit": {},
-  "dependencies": [],
-  "codeowners": [
-    "@cdpuk"
-  ],
-  "iot_class": "local_polling"
+  "version": "0.0.1"
 }
