@@ -273,28 +273,30 @@ _BATTERY_DISCHARGE_LIMIT_SENSOR = SensorEntityDescription(
     native_unit_of_measurement=POWER_WATT,
 )
 
-_BASIC_BATTERY_SENSORS = [
-    SensorEntityDescription(
-        key="battery_soc",
-        name="Battery Charge",
-        device_class=SensorDeviceClass.BATTERY,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=PERCENTAGE,
-    ),
-    SensorEntityDescription(
-        key="battery_num_cycles",
-        name="Battery Cycles",
-        icon=Icon.BATTERY_CYCLES,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-    ),
-    SensorEntityDescription(
-        key="v_battery_out",
-        name="Battery Output Voltage",
-        icon=Icon.BATTERY,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
-    ),
-]
+_BASIC_BATTERY_SENSORS = []
+
+_BATTERY_SOC_SENSOR = SensorEntityDescription(
+    key="battery_soc",
+    name="Battery Charge",
+    device_class=SensorDeviceClass.BATTERY,
+    state_class=SensorStateClass.MEASUREMENT,
+    native_unit_of_measurement=PERCENTAGE,
+)
+
+_BATTERY_VOUT_SENSOR = SensorEntityDescription(
+    key="v_battery_out",
+    name="Battery Output Voltage",
+    icon=Icon.BATTERY,
+    state_class=SensorStateClass.MEASUREMENT,
+    native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
+)
+
+_BATTERY_CYCLES_SENSOR = SensorEntityDescription(
+    key="battery_num_cycles",
+    name="Battery Cycles",
+    icon=Icon.BATTERY_CYCLES,
+    state_class=SensorStateClass.TOTAL_INCREASING,
+)
 
 _BATTERY_REMAINING_CAPACITY_SENSOR = SensorEntityDescription(
     key="battery_remaining_capacity",
@@ -384,6 +386,24 @@ async def async_setup_entry(
                         coordinator,
                         config_entry,
                         entity_description=_BATTERY_CELLS_VOLTAGE_SENSOR,
+                        battery_id=batt_num,
+                    ),
+                    BatteryCyclesSensor(
+                        coordinator,
+                        config_entry,
+                        entity_description=_BATTERY_CYCLES_SENSOR,
+                        battery_id=batt_num,
+                    ),
+                    BatterySocSensor(
+                        coordinator,
+                        config_entry,
+                        entity_description=_BATTERY_SOC_SENSOR,
+                        battery_id=batt_num,
+                    ),
+                    BatteryVoutSensor(
+                        coordinator,
+                        config_entry,
+                        entity_description=_BATTERY_VOUT_SENSOR,
                         battery_id=batt_num,
                     ),
                 ]
@@ -574,6 +594,30 @@ class BatteryRemainingCapacitySensor(BatteryBasicSensor):
         # Raw value is in Ah (Amp Hour)
         # Convert to KWh using formula Ah * V / 1000
         return round(battery_remaining_capacity, 3)
+
+
+class BatteryCyclesSensor(BatteryBasicSensor):
+    """Battery Cycles sensor."""
+
+    @property
+    def native_value(self) -> StateType:
+        return self.data.battery_num_cycles
+
+
+class BatterySocSensor(BatteryBasicSensor):
+    """Battery State of Charge sensor."""
+
+    @property
+    def native_value(self) -> StateType:
+        return self.data.battery_soc
+
+
+class BatteryVoutSensor(BatteryBasicSensor):
+    """Battery Voltage Output sensor."""
+
+    @property
+    def native_value(self) -> StateType:
+        return self.data.v_battery_out
 
 
 class BatteryCellsVoltageSensor(BatteryBasicSensor):
