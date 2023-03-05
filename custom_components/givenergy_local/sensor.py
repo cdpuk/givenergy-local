@@ -366,10 +366,12 @@ async def async_setup_entry(
         # Failure to read a S/N can result in null bytes
         if batt.battery_serial_number.replace("\x00", ""):
             async_add_entities(
-                BatteryBasicSensor(
-                    coordinator, config_entry, entity_description, batt_num
-                )
-                for entity_description in _BASIC_BATTERY_SENSORS
+                [
+                    BatteryBasicSensor(
+                        coordinator, config_entry, entity_description, batt_num
+                    )
+                    for entity_description in _BASIC_BATTERY_SENSORS
+                ]
             )
 
             async_add_entities(
