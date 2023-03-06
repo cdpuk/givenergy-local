@@ -322,15 +322,19 @@ async def async_setup_entry(
     """Add sensors for passed config_entry in HA."""
     coordinator: GivEnergyUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
+    entities = []
+
     # Add basic inverter sensors that map directly to registers.
-    async_add_entities(
-        InverterBasicSensor(coordinator, config_entry, entity_description)
-        for entity_description in _BASIC_INVERTER_SENSORS
+    entities.extend(
+        [
+            InverterBasicSensor(coordinator, config_entry, entity_description)
+            for entity_description in _BASIC_INVERTER_SENSORS
+        ]
     )
 
     # Add other inverter sensors that require more customization
     # (e.g. sensors that derive values from several registers).
-    async_add_entities(
+    entities.extend(
         [
             PVEnergyTodaySensor(
                 coordinator, config_entry, entity_description=_PV_ENERGY_TODAY_SENSOR
@@ -365,7 +369,7 @@ async def async_setup_entry(
         # Only add data for batteries if we can successfully read the serial number
         # Failure to read a S/N can result in null bytes
         if batt.battery_serial_number.replace("\x00", ""):
-            async_add_entities(
+            entities.extend(
                 [
                     BatteryBasicSensor(
                         coordinator, config_entry, entity_description, batt_num
@@ -374,7 +378,7 @@ async def async_setup_entry(
                 ]
             )
 
-            async_add_entities(
+            entities.extend(
                 [
                     BatteryRemainingCapacitySensor(
                         coordinator,
@@ -392,6 +396,8 @@ async def async_setup_entry(
             )
         else:
             LOGGER.warning("Ignoring battery %d due to missing serial number", batt_num)
+
+    async_add_entities(entities)
 
 
 class InverterBasicSensor(InverterEntity, SensorEntity):
