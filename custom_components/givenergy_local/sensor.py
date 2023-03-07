@@ -590,4 +590,7 @@ class BatteryCellsVoltageSensor(BatteryBasicSensor):
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
         """Expose individual cell voltages."""
-        return self.data.dict(include={f"v_battery_cell_{i:02d}" for i in range(1, 16)})  # type: ignore[no-any-return]
+        num_cells = self.data.battery_num_cells
+        return self.data.dict(  # type: ignore[no-any-return]
+            include={f"v_battery_cell_{i:02d}" for i in range(1, num_cells + 1)}
+        )
