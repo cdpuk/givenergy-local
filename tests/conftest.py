@@ -14,7 +14,8 @@
 #
 # See here for more info: https://docs.pytest.org/en/latest/fixture.html (note that
 # pytest includes fixtures OOB which you can use as defined on this page)
-from unittest.mock import patch
+from datetime import time
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -62,3 +63,37 @@ def error_get_data_fixture():
         side_effect=Exception,
     ):
         yield
+
+
+@pytest.fixture(name="mock_plant")
+def mock_plant_fixture():
+    """Mock enough inverter and battery data to allow platform setup to succeed."""
+    with patch("custom_components.givenergy_local.coordinator.Plant") as mock_ge_plant:
+        inverter = MagicMock()
+        inverter.inverter_serial_number = "SD12345678"
+        inverter.inverter_model = "Mock Inverter"
+        inverter.firmware_version = "MOCK"
+        inverter.temp_inverter_heatsink = 30
+        inverter.temp_battery = 20
+        inverter.e_inverter_out_total = 1234
+        inverter.charge_slot_1 = [time(0), time(1)]
+        inverter.charge_slot_2 = [time(2), time(3)]
+        inverter.discharge_slot_1 = [time(16), time(17)]
+        inverter.discharge_slot_2 = [time(18), time(19)]
+        inverter.battery_charge_limit = 50
+        inverter.battery_discharge_limit = 50
+
+        inverter.dict = MagicMock()
+        inverter.dict.return_value = inverter.__dict__
+
+        battery1 = MagicMock()
+        battery1.battery_serial_number = "BAT01"
+
+        battery2 = MagicMock()
+        battery2.battery_serial_number = "BAT02"
+
+        plant_instance = mock_ge_plant.return_value
+        plant_instance.inverter = inverter
+        plant_instance.batteries = [battery1, battery2]
+
+        yield mock_ge_plant
