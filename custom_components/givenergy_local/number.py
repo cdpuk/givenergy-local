@@ -149,13 +149,11 @@ class InverterBatteryPowerLimitNumber(InverterBasicNumber):
         target_value = int(watts / self.battery_power_step)
 
         if self.inverter_model == Model.Gen2:
-            # Gen2 inverters: Numbering seems to stop at 36, then jump to 50 = 3.6kW
-            # Each step value is 95W
+            # Gen2 inverters: Numbering stops at 36, then jumps to 50 = 3.6kW
             if target_value > 36:
                 target_value = 50
         else:
-            # Everything else: Numbering seems to stop at 30, then jump to 50 = 2.6kW
-            # Each step value is 81W
+            # Everything else: Numbering stops at 30, then jumps to 50 = 2.6kW
             if target_value > 30:
                 target_value = 50
 
