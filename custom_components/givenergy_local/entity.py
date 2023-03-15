@@ -1,4 +1,5 @@
 """Home Assistant entity descriptions."""
+from givenergy_modbus.model.inverter import Model
 from givenergy_modbus.model.plant import Battery, Inverter, Plant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import DeviceInfo
@@ -53,6 +54,16 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     def available(self) -> bool:
         """Return True if the inverter is online."""
         return self.coordinator.last_update_success  # type: ignore[no-any-return]
+
+    @property
+    def inverter_model(self) -> Model:
+        """Get the inverter model."""
+        return self.data.inverter_model
+
+    @property
+    def inverter_max_battery_power(self) -> Model:
+        """Get the maximum battery charge/discharge power for this model."""
+        return 3600 if self.inverter_model == Model.Gen2 else 2600
 
 
 class BatteryEntity(CoordinatorEntity[Plant]):

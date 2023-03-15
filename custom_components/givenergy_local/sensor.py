@@ -255,24 +255,6 @@ _BATTERY_MODE_SENSOR = SensorEntityDescription(
     icon=Icon.BATTERY,
 )
 
-_BATTERY_CHARGE_LIMIT_SENSOR = SensorEntityDescription(
-    key="battery_charge_limit",
-    name="Battery Charge Power Limit",
-    icon=Icon.BATTERY_PLUS,
-    device_class=SensorDeviceClass.POWER,
-    state_class=SensorStateClass.MEASUREMENT,
-    native_unit_of_measurement=POWER_WATT,
-)
-
-_BATTERY_DISCHARGE_LIMIT_SENSOR = SensorEntityDescription(
-    key="battery_discharge_limit",
-    name="Battery Discharge Power Limit",
-    icon=Icon.BATTERY_MINUS,
-    device_class=SensorDeviceClass.POWER,
-    state_class=SensorStateClass.MEASUREMENT,
-    native_unit_of_measurement=POWER_WATT,
-)
-
 _BASIC_BATTERY_SENSORS = [
     SensorEntityDescription(
         key="battery_soc",
@@ -350,16 +332,6 @@ async def async_setup_entry(
             ),
             BatteryModeSensor(
                 coordinator, config_entry, entity_description=_BATTERY_MODE_SENSOR
-            ),
-            BatteryChargeLimitSensor(
-                coordinator,
-                config_entry,
-                entity_description=_BATTERY_CHARGE_LIMIT_SENSOR,
-            ),
-            BatteryDischargeLimitSensor(
-                coordinator,
-                config_entry,
-                entity_description=_BATTERY_DISCHARGE_LIMIT_SENSOR,
             ),
         ]
     )
@@ -506,40 +478,6 @@ class BatteryModeSensor(InverterBasicSensor):
             else:
                 return "Timed Export"
         return "Unknown"
-
-
-class BatteryPowerLimitSensor(InverterBasicSensor):
-    """Battery power limit sensor for charging or discharging."""
-
-    def convert_raw_power_to_watts(self, raw_value: int) -> int:
-        """Convert an inverter register value to a power value in Watts."""
-        # Here be dragons.
-        # Interprets the raw value in the same way as the GivEnergy web portal.
-        # Step values are 81W up to 30*81=2430W.
-        # It's possible to write raw values of 31, 32 and 50 using the portal and/or
-        # app, but all of these are rendered as 2600W when read back in the portal.
-        # At time of writing, the official app uses a slightly different step value.
-        # Tested on a Gen 1 inverter with +/- 2.6kW max battery power; different logic
-        # almost certainly required on other units.
-        return 2600 if raw_value > 30 else raw_value * 81
-
-
-class BatteryChargeLimitSensor(BatteryPowerLimitSensor):
-    """Battery charge limit sensor."""
-
-    @property
-    def native_value(self) -> StateType:
-        """Map the low-level value to power in Watts."""
-        return self.convert_raw_power_to_watts(self.data.battery_charge_limit)
-
-
-class BatteryDischargeLimitSensor(BatteryPowerLimitSensor):
-    """Battery discharge limit sensor."""
-
-    @property
-    def native_value(self) -> StateType:
-        """Map the low-level value to power in Watts."""
-        return self.convert_raw_power_to_watts(self.data.battery_discharge_limit)
 
 
 class BatteryBasicSensor(BatteryEntity, SensorEntity):

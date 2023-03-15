@@ -1,7 +1,10 @@
 ---
 set_charge_limit:
   name: Set charge power limit
-  description: Set the maximum battery charging rate
+  description: >
+    Set the maximum battery charging rate. DEPRECATED: Use the
+    number.battery_charge_power entity instead. This only works for Gen1
+    inverters and will be removed in a future version.
   fields:
     device_id:
       name: Inverter
@@ -24,7 +27,10 @@ set_charge_limit:
           unit_of_measurement: W
 set_discharge_limit:
   name: Set discharge power limit
-  description: Set the maximum battery discharging rate
+  description: >
+    Set the maximum battery discharge rate. DEPRECATED: Use the
+    number.battery_discharge_power entity instead. This only works for Gen1
+    inverters and will be removed in a future version.
   fields:
     device_id:
       name: Inverter
