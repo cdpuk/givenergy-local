@@ -11,6 +11,9 @@ CONF_NUM_BATTERIES = "num_batteries"
 
 MANUFACTURER = "GivEnergy"
 
+# The nominal voltage of all LiFePO4 packs
+BATTERY_NOMINAL_VOLTAGE = 51.2
+
 
 class Icon(str, Enum):
     """Icon styles."""
