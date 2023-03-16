@@ -63,7 +63,12 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     @property
     def inverter_max_battery_power(self) -> Model:
         """Get the maximum battery charge/discharge power for this model."""
-        return 3600 if self.inverter_model == Model.Gen2 else 2600
+        if self.inverter_model == Model.Gen2:
+            return 3600
+        elif self.inverter_model == Model.AC:
+            return 3000
+        else:
+            return 2600
 
 
 class BatteryEntity(CoordinatorEntity[Plant]):
