@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from givenergy_modbus.client import GivEnergyClient
-from givenergy_modbus.model.inverter import Model
 from homeassistant.components.number import (
     NumberDeviceClass,
     NumberEntity,
@@ -147,17 +146,10 @@ class InverterBatteryPowerLimitNumber(InverterBasicNumber):
         inverter capabilities.
         """
         target_value = int(watts / self.battery_power_step)
+        max_step = int(self.inverter_max_battery_power / self.battery_power_step)
 
-        if self.inverter_model == Model.Gen2:
-            # Gen2 inverters: Numbering stops at 36, then jumps to 50 = 3.6kW
-            if target_value > 36:
-                target_value = 50
-        else:
-            # Everything else: Numbering stops at 30, then jumps to 50 = 2.6kW
-            if target_value > 30:
-                target_value = 50
-
-        return target_value
+        # The API always jumps to 50 to represent the maximum possible value
+        return 50 if target_value > max_step else target_value
 
 
 class InverterBatteryChargeLimitNumber(InverterBatteryPowerLimitNumber):
