@@ -145,11 +145,11 @@ class InverterBatteryPowerLimitNumber(InverterBasicNumber):
         There is added complexity here because the API values depend on the battery &
         inverter capabilities.
         """
-        target_value = int(watts / self.battery_power_step)
+        target_value = watts / self.battery_power_step
         max_step = int(self.inverter_max_battery_power / self.battery_power_step)
 
         # The API always jumps to 50 to represent the maximum possible value
-        return 50 if target_value > max_step else target_value
+        return 50 if target_value > max_step else int(target_value)
 
 
 class InverterBatteryChargeLimitNumber(InverterBatteryPowerLimitNumber):
