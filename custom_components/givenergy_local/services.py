@@ -23,6 +23,7 @@ _ATTR_POWER = "power"
 _ATTR_START_TIME = "start_time"
 _ATTR_END_TIME = "end_time"
 _ATTR_CHARGE_TARGET = "charge_target"
+_ATTR_SHALLOW_CHARGE = "shallow_charge"
 
 # Shared schema used for setting charge/discharge power limits.
 _SET_POWER_SCHEMA = vol.Schema(
@@ -38,6 +39,9 @@ _TIME_SPAN_SCHEMA = vol.Schema(
         vol.Required(ATTR_DEVICE_ID): str,
         vol.Required(_ATTR_START_TIME): str,
         vol.Required(_ATTR_END_TIME): str,
+        vol.Required(_ATTR_SHALLOW_CHARGE): vol.All(
+            vol.Coerce(int), vol.Range(min=4, max=100)
+        ),
     }
 )
 
@@ -218,6 +222,7 @@ async def _async_activate_mode_timed_discharge(
             "Activating timed discharge mode between %s and %s", start_time, end_time
         )
         client.set_mode_storage((start_time, end_time), export=False)
+        client.set_shallow_charge(data[_ATTR_SHALLOW_CHARGE])
 
     await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
 
@@ -235,6 +240,8 @@ async def _async_activate_mode_timed_export(
             "Activating timed export mode between %s and %s", start_time, end_time
         )
         client.set_mode_storage((start_time, end_time), export=True)
+
+        client.set_shallow_charge(data[_ATTR_SHALLOW_CHARGE])
 
     await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
 

@@ -67,8 +67,8 @@ activate_mode_eco:
 activate_mode_timed_discharge:
   name: Activate timed discharge mode
   description: >
-    This mode will discharge your batteries to your home during a period you
-    define
+    This mode will is similar to Eco mode charge and discharge your batteries to minimise your import from the grid.
+    But it will discharge battery at full power during a period you define, until Charge Reserve is reached.
   fields:
     device_id:
       name: Device
@@ -89,11 +89,21 @@ activate_mode_timed_discharge:
       required: true
       selector:
         time:
+    shallow_charge:
+      name: Shallow Charge
+      description: >
+        Battery SOC minimum during discharging.
+      required: true
+      selector:
+        number:
+          min: 4
+          max: 100
+          unit_of_measurement: "%"
 activate_mode_timed_export:
   name: Activate timed export mode
   description: >
-    This mode will hold your battery power and discharge it at full power
-    during a period you define
+    This mode will hold your battery power, trickle charging at ~300w only if battery is below Charge Reserve. It will send any excess PV to the grid.
+    It will discharge battery at full power during a period you define, until Charge Reserve is reached
   fields:
     device_id:
       name: Device
@@ -114,6 +124,16 @@ activate_mode_timed_export:
       required: true
       selector:
         time:
+    shallow_charge:
+      name: Shallow Charge
+      description: >
+        Battery SOC minimum during discharging.
+      required: true
+      selector:
+        number:
+          min: 4
+          max: 100
+          unit_of_measurement: "%"
 enable_timed_charge:
   name: Enable timed charging
   description: >
