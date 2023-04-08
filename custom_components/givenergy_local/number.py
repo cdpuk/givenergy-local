@@ -29,7 +29,7 @@ async def async_setup_entry(
     async_add_entities(
         [
             ACChargeLimitNumber(coordinator, config_entry),
-            ChargeMinimumNumber(coordinator, config_entry),
+            BatterySoCReserveNumber(coordinator, config_entry),
             InverterBatteryChargeLimitNumber(coordinator, config_entry),
             InverterBatteryDischargeLimitNumber(coordinator, config_entry),
         ]
@@ -103,21 +103,21 @@ class ACChargeLimitNumber(InverterBasicNumber):
         )
 
 
-class ChargeMinimumNumber(InverterBasicNumber):
-    """Number to represent and control the minimum SOC Limit."""
+class BatterySoCReserveNumber(InverterBasicNumber):
+    """Number to represent and control the Battery SOC Reserve."""
 
     def __init__(
         self,
         coordinator: GivEnergyUpdateCoordinator,
         config_entry: ConfigEntry,
     ) -> None:
-        """Initialize the Minimum Limit number."""
+        """Initialize the Battery SOC Reserve number."""
         super().__init__(
             coordinator,
             config_entry,
             NumberEntityDescription(
                 key="battery_soc_reserve",
-                name="Battery Shallow Charge Limit",
+                name="Battery SOC Reserve",
                 icon=Icon.BATTERY_MINUS,
                 native_unit_of_measurement=PERCENTAGE,
             ),
