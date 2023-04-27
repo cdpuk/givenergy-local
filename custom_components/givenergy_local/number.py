@@ -128,7 +128,7 @@ class BatterySoCReserveNumber(InverterBasicNumber):
         self._attr_native_max_value = 100
 
         # A 5% step size makes the slider a bit nicer to use
-        # self._attr_native_step = 5
+        self._attr_native_step = 5
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value."""
