@@ -13,6 +13,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_point_in_time
+from homeassistant.util import dt
 
 from .const import DOMAIN, LOGGER, Icon
 from .coordinator import GivEnergyUpdateCoordinator
@@ -105,7 +106,7 @@ class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
         Work out when we next need to update the state due to the current time
         passing over the start of end time of the slot.
         """
-        now = datetime.now()
+        now = dt.now()
 
         # Get slot details
         current_time = now.time()
@@ -152,7 +153,7 @@ class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Determine whether we're currently within the slot."""
-        now = datetime.now().time()
+        now: time = dt.now().time()
         return self.slot[0] <= now < self.slot[1]
 
     @property
