@@ -29,6 +29,7 @@ async def async_setup_entry(
     async_add_entities(
         [
             ACChargeLimitNumber(coordinator, config_entry),
+            BatterySoCReserveNumber(coordinator, config_entry),
             InverterBatteryChargeLimitNumber(coordinator, config_entry),
             InverterBatteryDischargeLimitNumber(coordinator, config_entry),
         ]
@@ -99,6 +100,46 @@ class ACChargeLimitNumber(InverterBasicNumber):
             self.hass,
             self.coordinator,
             enable_charge_target,
+        )
+
+
+class BatterySoCReserveNumber(InverterBasicNumber):
+    """Number to represent and control the Battery SOC Reserve."""
+
+    def __init__(
+        self,
+        coordinator: GivEnergyUpdateCoordinator,
+        config_entry: ConfigEntry,
+    ) -> None:
+        """Initialize the Battery SOC Reserve number."""
+        super().__init__(
+            coordinator,
+            config_entry,
+            NumberEntityDescription(
+                key="battery_soc_reserve",
+                name="Battery SOC Reserve",
+                icon=Icon.BATTERY_MINUS,
+                native_unit_of_measurement=PERCENTAGE,
+            ),
+        )
+
+        # Values correspond to SOC percentage
+        self._attr_native_min_value = 4
+        self._attr_native_max_value = 100
+
+        # A 5% step size makes the slider a bit nicer to use
+        self._attr_native_step = 5
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Update the current value."""
+
+        def set_shallow_charge(client: GivEnergyClient) -> None:
+            client.set_shallow_charge(int(value))
+
+        await async_reliable_call(
+            self.hass,
+            self.coordinator,
+            set_shallow_charge,
         )
 
 
