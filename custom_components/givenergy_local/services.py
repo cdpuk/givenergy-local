@@ -217,8 +217,10 @@ async def _async_activate_mode_timed_discharge(
         LOGGER.debug(
             "Activating timed discharge mode between %s and %s", start_time, end_time
         )
-        client.set_mode_storage((start_time, end_time), export=False)
-
+        client.set_battery_discharge_mode_demand()
+        client.enable_discharge()
+        client.set_discharge_slot_1([start_time, end_time])
+        
     await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
 
 
@@ -234,8 +236,10 @@ async def _async_activate_mode_timed_export(
         LOGGER.debug(
             "Activating timed export mode between %s and %s", start_time, end_time
         )
-        client.set_mode_storage((start_time, end_time), export=True)
-
+        client.set_battery_discharge_mode_max_power()
+        client.enable_discharge()
+        client.set_discharge_slot_1([start_time, end_time])
+        
     await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
 
 
