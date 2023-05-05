@@ -458,7 +458,7 @@ class ConsumptionTotalSensor(InverterBasicSensor):
 class BatteryModeSensor(InverterBasicSensor):
     """Battery mode sensor."""
 
-   @property
+    @property
     def native_value(self) -> StateType:
         """Determine the mode based on various settings."""
 
@@ -466,12 +466,13 @@ class BatteryModeSensor(InverterBasicSensor):
         # 0: export/max
         # 1: demand/self-consumption
         battery_power_mode = self.data.battery_power_mode
+        battery_soc_reserve = self.data.battery_soc_reserve
         enable_discharge = self.data.enable_discharge
 
-        if battery_power_mode == 1 and enable_discharge is False:
+        if battery_power_mode == 1 and battery_soc_reserve == 4:
             return "Eco"
 
-        if enable_discharge is True:
+        if enable_discharge is True and battery_soc_reserve == 100:
             if battery_power_mode == 1:
                 return "Timed Discharge"
             else:
