@@ -469,10 +469,10 @@ class BatteryModeSensor(InverterBasicSensor):
         battery_soc_reserve = self.data.battery_soc_reserve
         enable_discharge = self.data.enable_discharge
 
-        if battery_power_mode == 1 and battery_soc_reserve == 4:
+        if battery_power_mode == 1 and enable_discharge is False:
             return "Eco"
 
-        if enable_discharge is True and battery_soc_reserve == 100:
+        if enable_discharge is True:
             if battery_power_mode == 1:
                 return "Timed Discharge"
             else:
