@@ -466,7 +466,6 @@ class BatteryModeSensor(InverterBasicSensor):
         # 0: export/max
         # 1: demand/self-consumption
         battery_power_mode = self.data.battery_power_mode
-        battery_soc_reserve = self.data.battery_soc_reserve
         enable_discharge = self.data.enable_discharge
 
         if battery_power_mode == 1 and enable_discharge is False:
@@ -504,7 +503,7 @@ class BatteryBasicSensor(BatteryEntity, SensorEntity):
 
     @property
     def native_value(self) -> StateType:
-        """Return the register value as referenced by the 'key' property of the associated entity description."""
+        """Get the register value whose name matches the entity key."""
         return self.data.dict().get(self.entity_description.key)
 
 
