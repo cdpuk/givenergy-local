@@ -30,7 +30,7 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
             hass,
             _LOGGER,
             name="Inverter",
-            update_interval=timedelta(seconds=30),
+            update_interval=timedelta(seconds=60),
         )
 
         self.host = host
@@ -61,12 +61,12 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
             client = GivEnergyClient(self.host)
             if full_refresh:
                 _LOGGER.debug("Performing full refresh")
-                client.refresh_plant(self.plant, full_refresh=True)
+                client.refresh_plant(self.plant, isAIO=False, full_refresh=True)
                 self.last_full_refresh = datetime.utcnow()
                 self.require_full_refresh = False
             else:
                 _LOGGER.debug("Performing partial refresh")
-                client.refresh_plant(self.plant, full_refresh=False)
+                client.refresh_plant(self.plant, isAIO=False, full_refresh=True)
         finally:
             # We seem to have better reliability when we avoid reusing the client object
             # Close the underlying socket to clean up resources

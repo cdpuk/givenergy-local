@@ -1,5 +1,5 @@
 """Home Assistant entity descriptions."""
-from givenergy_modbus.model.inverter import Model
+from givenergy_modbus.model.inverter import Model, Generation
 from givenergy_modbus.model.plant import Battery, Inverter, Plant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import DeviceInfo
@@ -61,9 +61,14 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
         return self.data.inverter_model
 
     @property
+    def inverter_generation(self) -> Generation:
+        """Get the inverter model."""
+        return self.data.inverter_generation
+
+    @property
     def inverter_max_battery_power(self) -> Model:
         """Get the maximum battery charge/discharge power for this model."""
-        if self.inverter_model == Model.Gen2:
+        if self.inverter_generation == Generation.Gen2:
             return 3600
         elif self.inverter_model == Model.AC:
             return 3000

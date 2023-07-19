@@ -164,3 +164,15 @@ disable_timed_charge:
       selector:
         device:
           integration: givenergy_local
+reboot_inverter:
+  name: Reboot Inverter
+  description: >
+    Reboots inverter only use to overcome bugs
+  fields:
+    device_id:
+      name: Device
+      description: Inverter to control
+      required: true
+      selector:
+        device:
+          integration: givenergy_local

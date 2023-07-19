@@ -71,6 +71,9 @@ _SERVICE_ENABLE_TIMED_CHARGE_SCHEMA = vol.Schema(
 _SERVICE_DISABLE_TIMED_CHARGE = "disable_timed_charge"
 _SERVICE_DISABLE_TIMED_CHARGE_SCHEMA = vol.Schema({vol.Required(ATTR_DEVICE_ID): str})
 
+_SERVICE_REBOOT_INVERTER = "reboot_inverter"
+_SERVICE_REBOOT_INVERTER_SCHEMA = vol.Schema({vol.Required(ATTR_DEVICE_ID): str})
+
 _SUPPORTED_SERVICES = [
     _SERVICE_SET_CHARGE_LIMIT,
     _SERVICE_SET_DISCHARGE_LIMIT,
@@ -79,6 +82,7 @@ _SUPPORTED_SERVICES = [
     _SERVICE_ACTIVATE_TIMED_EXPORT,
     _SERVICE_ENABLE_TIMED_CHARGE,
     _SERVICE_DISABLE_TIMED_CHARGE,
+    _SERVICE_REBOOT_INVERTER,
 ]
 _SERVICE_TO_SCHEMA = {
     _SERVICE_SET_CHARGE_LIMIT: _SERVICE_SET_CHARGE_LIMIT_SCHEMA,
@@ -88,6 +92,7 @@ _SERVICE_TO_SCHEMA = {
     _SERVICE_ACTIVATE_TIMED_EXPORT: _SERVICE_ACTIVATE_TIMED_EXPORT_SCHEMA,
     _SERVICE_ENABLE_TIMED_CHARGE: _SERVICE_ENABLE_TIMED_CHARGE_SCHEMA,
     _SERVICE_DISABLE_TIMED_CHARGE: _SERVICE_DISABLE_TIMED_CHARGE_SCHEMA,
+    _SERVICE_REBOOT_INVERTER: _SERVICE_REBOOT_INVERTER_SCHEMA,
 }
 
 
@@ -102,6 +107,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
         _SERVICE_ACTIVATE_TIMED_EXPORT: _async_activate_mode_timed_export,
         _SERVICE_ENABLE_TIMED_CHARGE: _async_enable_timed_charge,
         _SERVICE_DISABLE_TIMED_CHARGE: _async_disable_timed_charge,
+        _SERVICE_REBOOT_INVERTER: _async_reboot_inverter,
     }
 
     async def async_call_service(service_call: ServiceCall) -> None:
@@ -217,7 +223,7 @@ async def _async_activate_mode_timed_discharge(
         LOGGER.debug(
             "Activating timed discharge mode between %s and %s", start_time, end_time
         )
-        client.set_battery_discharge_mode_demand()  # battery_power_mode = 1
+        client.set_battery_discharge_mode_demand()
         client.enable_discharge()
         client.set_discharge_slot_1([start_time, end_time])
 
@@ -236,7 +242,7 @@ async def _async_activate_mode_timed_export(
         LOGGER.debug(
             "Activating timed export mode between %s and %s", start_time, end_time
         )
-        client.set_battery_discharge_mode_max_power()  # battery_power_mode = 0
+        client.set_battery_discharge_mode_max_power()
         client.enable_discharge()
         client.set_discharge_slot_1([start_time, end_time])
 
@@ -275,5 +281,15 @@ async def _async_disable_timed_charge(
     def call(client: GivEnergyClient) -> None:
         LOGGER.debug("Deactivating timed charge mode")
         client.disable_charge()
+
+    await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
+
+
+async def _async_reboot_inverter(hass: HomeAssistant, data: dict[str, Any]) -> None:
+    """Reboot Inverter"""
+
+    def call(client: GivEnergyClient) -> None:
+        LOGGER.debug("Rebooting Inverter")
+        client.reboot_invertor()
 
     await _async_service_call(hass, data[ATTR_DEVICE_ID], call)
