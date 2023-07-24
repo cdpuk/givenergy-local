@@ -22,7 +22,7 @@ async def read_inverter_serial(hass: HomeAssistant, data: dict[str, Any]) -> str
     plant = Plant(number_batteries=data[CONF_NUM_BATTERIES])
     client = GivEnergyClient(data[CONF_HOST])
     async with async_timeout.timeout(10):
-        await hass.async_add_executor_job(client.refresh_plant, plant, True)
+        await hass.async_add_executor_job(client.refresh_plant, plant, False, True)
 
     serial_no: str = plant.inverter.inverter_serial_number
     return serial_no
