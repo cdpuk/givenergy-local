@@ -66,7 +66,7 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                 self.require_full_refresh = False
             else:
                 _LOGGER.debug("Performing partial refresh")
-                client.refresh_plant(self.plant, isAIO=False, full_refresh=True)
+                client.refresh_plant(self.plant, isAIO=False, full_refresh=False)
         finally:
             # We seem to have better reliability when we avoid reusing the client object
             # Close the underlying socket to clean up resources
