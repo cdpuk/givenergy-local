@@ -1,6 +1,10 @@
 """Home Assistant entity descriptions."""
-from givenergy_modbus.model.inverter import Model
-from givenergy_modbus.model.plant import Battery, Inverter, Plant
+from custom_components.givenergy_local.givenergy_modbus.model.inverter import Model
+from custom_components.givenergy_local.givenergy_modbus.model.plant import (
+    Battery,
+    Inverter,
+    Plant,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -32,12 +36,11 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     def device_info(self) -> DeviceInfo:
         """Inverter device information for the entity."""
 
-        model_name = self.data.inverter_model
-        if model_name is None:
-            model_name = "Unknown"
+        model: Model = self.data.model
+        model_name = f"TODO_{model}"
 
         return DeviceInfo(
-            identifiers={(DOMAIN, self.data.inverter_serial_number)},
+            identifiers={(DOMAIN, self.data.serial_number)},
             name="Solar Inverter",
             model=model_name,
             manufacturer=MANUFACTURER,
@@ -58,12 +61,12 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     @property
     def inverter_model(self) -> Model:
         """Get the inverter model."""
-        return self.data.inverter_model
+        return self.data.model
 
     @property
-    def inverter_max_battery_power(self) -> Model:
+    def inverter_max_battery_power(self) -> int:
         """Get the maximum battery charge/discharge power for this model."""
-        if self.inverter_model == Model.Gen2:
+        if self.inverter_model == Model.EMS:  # TODO: Gen2?
             return 3600
         elif self.inverter_model == Model.AC:
             return 3000
@@ -92,7 +95,7 @@ class BatteryEntity(CoordinatorEntity[Plant]):
         """Battery device information for the entity."""
 
         return DeviceInfo(
-            identifiers={(DOMAIN, self.data.battery_serial_number)},
+            identifiers={(DOMAIN, self.data.serial_number)},
             name="Battery",
             manufacturer=MANUFACTURER,
             model=self.battery_model,

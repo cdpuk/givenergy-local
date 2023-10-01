@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 import async_timeout
-from givenergy_modbus.client import GivEnergyClient, Plant
+from custom_components.givenergy_local.givenergy_modbus.client.client import Client
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
@@ -19,12 +19,13 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 
 async def read_inverter_serial(hass: HomeAssistant, data: dict[str, Any]) -> str:
     """Validate user input by reading the inverter serial number."""
-    plant = Plant(number_batteries=data[CONF_NUM_BATTERIES])
-    client = GivEnergyClient(data[CONF_HOST])
+    client = Client(data[CONF_HOST], 8899)
     async with async_timeout.timeout(10):
-        await hass.async_add_executor_job(client.refresh_plant, plant, True)
+        await client.connect()
+        await client.refresh_plant(timeout=5.0)
+        await client.close()
 
-    serial_no: str = plant.inverter.inverter_serial_number
+    serial_no: str = client.plant.inverter.serial_number
     return serial_no
 
 
