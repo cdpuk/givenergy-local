@@ -3,7 +3,7 @@ import asyncio
 
 from typing import Callable
 
-from givenergy_modbus.client import GivEnergyClient
+from custom_components.givenergy_local.givenergy_modbus.client.client import Client
 from homeassistant.core import HomeAssistant
 
 from .const import LOGGER
@@ -19,7 +19,7 @@ _DELAY_BETWEEN_ATTEMPTS = 2.0
 async def async_reliable_call(
     hass: HomeAssistant,
     coordinator: GivEnergyUpdateCoordinator,
-    func: Callable[[GivEnergyClient], None],
+    func: Callable[[Client], None],
 ) -> None:
     """
     Attempt to reliably call a function on a GivEnergy client.
@@ -31,7 +31,7 @@ async def async_reliable_call(
 
     while attempts > 0:
         LOGGER.debug("Attempting function call (%d attempts left)", attempts)
-        client = GivEnergyClient(coordinator.host)
+        client = Client(coordinator.host, 1883)
 
         try:
             await hass.async_add_executor_job(func, client)

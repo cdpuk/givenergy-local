@@ -21,9 +21,8 @@ _PLATFORMS: list[Platform] = [
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up GivEnergy from a config entry."""
     host = entry.data.get(CONF_HOST)
-    num_batteries = entry.data.get(CONF_NUM_BATTERIES)
 
-    coordinator = GivEnergyUpdateCoordinator(hass, host, num_batteries)
+    coordinator = GivEnergyUpdateCoordinator(hass, host)
     await coordinator.async_refresh()
 
     if not coordinator.last_update_success:

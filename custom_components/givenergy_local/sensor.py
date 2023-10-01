@@ -5,7 +5,7 @@ from collections.abc import Mapping
 
 from typing import Any
 
-from givenergy_modbus.model.inverter import Model
+from .givenergy_modbus.model.inverter import Model
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -345,37 +345,32 @@ async def async_setup_entry(
     )
 
     # Add battery sensors
-    for batt_num, batt in enumerate(coordinator.data.batteries):
-        # Only add data for batteries if we can successfully read the serial number
-        # Failure to read a S/N can result in null bytes
-        if batt.battery_serial_number.replace("\x00", ""):
-            entities.extend(
-                [
-                    BatteryBasicSensor(
-                        coordinator, config_entry, entity_description, batt_num
-                    )
-                    for entity_description in _BASIC_BATTERY_SENSORS
-                ]
-            )
+    for batt_num in range(len(coordinator.data.batteries)):
+        entities.extend(
+            [
+                BatteryBasicSensor(
+                    coordinator, config_entry, entity_description, batt_num
+                )
+                for entity_description in _BASIC_BATTERY_SENSORS
+            ]
+        )
 
-            entities.extend(
-                [
-                    BatteryRemainingCapacitySensor(
-                        coordinator,
-                        config_entry,
-                        entity_description=_BATTERY_REMAINING_CAPACITY_SENSOR,
-                        battery_id=batt_num,
-                    ),
-                    BatteryCellsVoltageSensor(
-                        coordinator,
-                        config_entry,
-                        entity_description=_BATTERY_CELLS_VOLTAGE_SENSOR,
-                        battery_id=batt_num,
-                    ),
-                ]
-            )
-        else:
-            LOGGER.warning("Ignoring battery %d due to missing serial number", batt_num)
+        entities.extend(
+            [
+                BatteryRemainingCapacitySensor(
+                    coordinator,
+                    config_entry,
+                    entity_description=_BATTERY_REMAINING_CAPACITY_SENSOR,
+                    battery_id=batt_num,
+                ),
+                BatteryCellsVoltageSensor(
+                    coordinator,
+                    config_entry,
+                    entity_description=_BATTERY_CELLS_VOLTAGE_SENSOR,
+                    battery_id=batt_num,
+                ),
+            ]
+        )
 
     async_add_entities(entities)
 
@@ -391,9 +386,7 @@ class InverterBasicSensor(InverterEntity, SensorEntity):
     ) -> None:
         """Initialize a sensor based on an entity description."""
         super().__init__(coordinator, config_entry)
-        self._attr_unique_id = (
-            f"{self.data.inverter_serial_number}_{entity_description.key}"
-        )
+        self._attr_unique_id = f"{self.data.serial_number}_{entity_description.key}"
         self.entity_description = entity_description
 
     @property
@@ -504,9 +497,7 @@ class BatteryBasicSensor(BatteryEntity, SensorEntity):
     ) -> None:
         """Initialize a sensor based on an entity description."""
         super().__init__(coordinator, config_entry, battery_id)
-        self._attr_unique_id = (
-            f"{self.data.battery_serial_number}_{entity_description.key}"
-        )
+        self._attr_unique_id = f"{self.data.serial_number}_{entity_description.key}"
         self.entity_description = entity_description
 
     @property
@@ -522,7 +513,7 @@ class BatteryRemainingCapacitySensor(BatteryBasicSensor):
     def native_value(self) -> StateType:
         """Map the low-level Ah value to energy in kWh."""
         battery_remaining_capacity = (
-            self.data.battery_remaining_capacity * self.data.v_battery_cells_sum / 1000
+            self.data.cap_remaining * self.data.v_cells_sum / 1000
         )
         # Raw value is in Ah (Amp Hour)
         # Convert to KWh using formula Ah * V / 1000
@@ -535,7 +526,7 @@ class BatteryCellsVoltageSensor(BatteryBasicSensor):
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
         """Expose individual cell voltages."""
-        num_cells = self.data.battery_num_cells
+        num_cells = self.data.num_cells
         return self.data.dict(  # type: ignore[no-any-return]
-            include={f"v_battery_cell_{i:02d}" for i in range(1, num_cells + 1)}
+            include={f"v_cell_{i:02d}" for i in range(1, num_cells + 1)}
         )

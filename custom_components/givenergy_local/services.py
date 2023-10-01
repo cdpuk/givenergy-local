@@ -3,7 +3,7 @@ import datetime
 
 from typing import Any, Callable
 
-from givenergy_modbus.client import GivEnergyClient
+from custom_components.givenergy_local.givenergy_modbus.client.client import Client
 from homeassistant.const import ATTR_DEVICE_ID
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import device_registry as dr
@@ -136,7 +136,7 @@ async def _async_get_config_entries(hass: HomeAssistant, device_id: str) -> set[
 
 
 async def _async_service_call(
-    hass: HomeAssistant, device_id: str, func: Callable[[GivEnergyClient], None]
+    hass: HomeAssistant, device_id: str, func: Callable[[Client], None]
 ) -> None:
     # Just take the first matching config entry
     # We really shouldn't have multiple entries for the same device ID
@@ -154,7 +154,7 @@ async def _async_set_charge_power_limit(
 ) -> None:
     """Set the maximum battery charge power."""
 
-    def call(client: GivEnergyClient) -> None:
+    def call(client: Client) -> None:
         target_value = int(data[_ATTR_POWER] / 81)
 
         # Numbering seems to stop at 30, then jump to 50 = 2.6kW
@@ -176,7 +176,7 @@ async def _async_set_discharge_power_limit(
 ) -> None:
     """Set the maximum battery discharge power."""
 
-    def call(client: GivEnergyClient) -> None:
+    def call(client: Client) -> None:
         target_value = int(data[_ATTR_POWER] / 81)
 
         # Numbering seems to stop at 30, then jump to 50 = 2.6kW
@@ -198,7 +198,7 @@ async def _async_set_discharge_power_limit(
 async def _async_activate_mode_eco(hass: HomeAssistant, data: dict[str, Any]) -> None:
     """Activate 'Eco' mode, as found in the GivEnergy portal."""
 
-    def call(client: GivEnergyClient) -> None:
+    def call(client: Client) -> None:
         LOGGER.debug("Activating eco mode")
         client.set_mode_dynamic()
 
@@ -210,7 +210,7 @@ async def _async_activate_mode_timed_discharge(
 ) -> None:
     """Activate 'Timed Discharge' mode, as found in the GivEnergy portal."""
 
-    def call(client: GivEnergyClient) -> None:
+    def call(client: Client) -> None:
         start_time = datetime.time.fromisoformat(data[_ATTR_START_TIME])
         end_time = datetime.time.fromisoformat(data[_ATTR_END_TIME])
 
@@ -229,7 +229,7 @@ async def _async_activate_mode_timed_export(
 ) -> None:
     """Activate 'Timed Export' mode, as found in the GivEnergy portal."""
 
-    def call(client: GivEnergyClient) -> None:
+    def call(client: Client) -> None:
         start_time = datetime.time.fromisoformat(data[_ATTR_START_TIME])
         end_time = datetime.time.fromisoformat(data[_ATTR_END_TIME])
 
@@ -251,7 +251,7 @@ async def _async_enable_timed_charge(hass: HomeAssistant, data: dict[str, Any]) 
     parallel to those modes.
     """
 
-    def call(client: GivEnergyClient) -> None:
+    def call(client: Client) -> None:
         LOGGER.debug("Activating timed charge mode")
 
         client.enable_charge()
@@ -272,7 +272,7 @@ async def _async_disable_timed_charge(
 ) -> None:
     """Disable 'Timed Charge', as found in the GivEnergy portal."""
 
-    def call(client: GivEnergyClient) -> None:
+    def call(client: Client) -> None:
         LOGGER.debug("Deactivating timed charge mode")
         client.disable_charge()
 
