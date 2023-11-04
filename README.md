@@ -7,15 +7,11 @@
 
 This custom component provides local access to GivEnergy inverters via Modbus. This provides more frequent and reliable updates compared to using the GivEnergy Cloud API.
 
+While the risk of something going wrong is low, bear in mind the use of this integration is entirely at your own risk.
+
 ## Device Support
 
-Modbus support is provided by the [`givenergy-modbus`][givenergy-modbus] library. While this works well for the vast majority of GivEnergy inverters and batteries, inevitably there will be edge cases and new kit that requires updates to either this integration or the underlying library.
-
-## Services
-
-A number of services are provided to change settings by writing configuration values to your inverter. These operations map on to those provided by GivEnergy, such as turning on Eco mode, or changing charge/discharge rates.
-
-While the risk of something going wrong is low, bear in mind the use of this integration is entirely at your own risk.
+Modbus support is provided by the [`givenergy-modbus`][givenergy-modbus] library. While this works well for the vast majority of GivEnergy inverters and batteries, inevitably there will be edge cases and new kit that requires updates to either this integration or the underlying library. See the [Limitations](#limitations) section.
 
 ## Installation
 
@@ -31,42 +27,23 @@ You need to know the hostname or IP address of your inverter, which you can norm
 * Go to **Configuration** > **Devices & Services** > **Add Integration**, then find **GivEnergy Local** in the list.
 * Enter the inverter address when prompted.
 
-If your Home Assistant instance is in a different VLAN or network than inverter, ensure it can reach the inverter via port 8899 (TCP).
+If your Home Assistant instance is in a different VLAN or network than inverter, ensure it can reach the inverter via TCP port 8899.
+
+## Documentation
+
+* [Energy dashboard](docs/energy-dashboard.md)
+* [Inverter controls](docs/controls.md)
+* [Uploading to pvoutput.org](docs/pvoutput.md)
 
 ## Limitations
 
-The modbus connection used to communiate with GivEnergy inverters can be unreliable at times. This may be due to issues in the `givenergy_modbus` library, or the inverter firmware.
+This integration uses the latest public release of the `givenergy_modbus` library. Unfortunately, this hasn't kept pace with GivEnergy product updates, so may be incompatible with communication methods and features found in newer systems.
 
-The integration attempts to work around some of these errors, but there's only so much that can be done.
+The current `givenergy_modbus` uses a communication method that is known to be slightly unreliable. Your Home Assistant logs are likely to be filled with a gradual stream of errors from the library. However, due to the fairly high update rate, the odd missed update is rarely an issue.
 
-If you see errors coming from the `givenergy_modbus` library, it's unlikely that anything can be done to this integration that will resolve the problem. Don't be offended if you bug report is closed in such cases.
+Other community projects such as GivTCP have chosen to copy & modify the `givenergy_modbus` library to resolve some of these issues, however those modifications have not been released as a standalone project that can easily be reused by this integration.
 
-## PVOutput upload
-
-This integration provides data that can be used to upload system stats to [pvoutput.org](pvoutput.org).
-
-Open your Home Assistant `configuration.yaml` file and add the following:
-
-```yaml
-shell_command:
-  pvoutputcurl: >
-    curl -d "d={{now().strftime("%Y%m%d")}}"
-         -d "t={{now().strftime("%H:%M")}}"
-         -d "v1={{ (states('sensor.pv_energy_today') | float * 1000)  | int }}"
-         -d "v2={{ states('sensor.pv_power') }}"
-         -d "v6={{ states('sensor.grid_voltage') }}"
-         -H "X-Pvoutput-SystemId: <system-id>"
-         -H "X-Pvoutput-Apikey: <api-key>"
-         https://pvoutput.org/service/r2/addstatus.jsp
-```
-
-In the above snippet, you need to replace `<system-id>` and `api-key` with values from your own PVOutput system. These can be string literals or something more clever such as helper values set via the web UI. Once saved, you'll need to restart Home Assistant.
-
-Configure an automation as follows:
-
-* Trigger: Time pattern with minutes set to `/5`, `/10` or `/15` to match your PVOutput expected reporting interval. Note that since the inverter only reports energy with 0.1kWh precision, longer intervals tend to work better, especially in overcast conditions when total energy may not increment over a short period.
-* Conditions: Optionally, configure a State condition for the Sun entity with a value `above_horizon`. This trims off uninteresting parts of the day in your PVOutput logs and charts.
-* Action: Set this to "Call service" and find "Shell Command: pvoutputcurl".
+Don't be offended if you bug report is closed if it relates to the above limitations.
 
 ## Contributing
 
