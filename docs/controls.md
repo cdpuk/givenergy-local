@@ -40,11 +40,19 @@ When `switch.battery_ac_charging` is turned `on`, the battery will be charged fr
 
 This seems to work for "Timed Export" mode, however "Timed Discharge" does not appear to behave as expected, with the battery continuing to discharge outside of the defined slots. This was observed on a Gen1 inverter, so results on other equipment may vary. Please update this if you know more!
 
+### Battery cutoff limit
+
+`number.battery_cutoff_limit` sets the minimum allowable battery SOC during battery discharge.
+
+This is relatively useful, unlike the poorly named and confusing...
+
 ### Battery SOC reserve
 
-This is controlled via `number.battery_soc_reserve`. Despite the name, this does not seem to set a minimum SOC under normal conditions.
+This is controlled via `number.battery_soc_reserve`. Despite the name, this does not set a minimum SOC under normal conditions.
 
 This is poorly documented. A GivEnergy marketing document suggests that this only affects systems with an EPS configured.
+
+To further add confusion, this setting is exposed in the GivEnergy app, rather than the more useful cutoff limit.
 
 ## Services
 

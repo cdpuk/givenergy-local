@@ -103,6 +103,14 @@ _BASIC_INVERTER_SENSORS = [
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
     ),
     SensorEntityDescription(
+        key="p_inverter_out",
+        name="Inverter Output Power",
+        icon=Icon.INVERTER,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=POWER_WATT,
+    ),
+    SensorEntityDescription(
         key="e_battery_charge_day",
         name="Battery Charge Today",
         icon=Icon.BATTERY_PLUS,

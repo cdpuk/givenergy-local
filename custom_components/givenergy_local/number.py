@@ -30,6 +30,7 @@ async def async_setup_entry(
         [
             ACChargeLimitNumber(coordinator, config_entry),
             BatterySoCReserveNumber(coordinator, config_entry),
+            BatteryMinPowerReserveNumber(coordinator, config_entry),
             InverterBatteryChargeLimitNumber(coordinator, config_entry),
             InverterBatteryDischargeLimitNumber(coordinator, config_entry),
         ]
@@ -104,7 +105,10 @@ class ACChargeLimitNumber(InverterBasicNumber):
 
 
 class BatterySoCReserveNumber(InverterBasicNumber):
-    """Number to represent and control the Battery SOC Reserve."""
+    """Number to represent and control the Battery SOC Reserve.
+
+    This is believed to only affect systems with EPS enabled.
+    """
 
     def __init__(
         self,
@@ -140,6 +144,43 @@ class BatterySoCReserveNumber(InverterBasicNumber):
             self.hass,
             self.coordinator,
             set_shallow_charge,
+        )
+
+
+class BatteryMinPowerReserveNumber(InverterBasicNumber):
+    """Number to represent and control the Battery Minimum Reserve level."""
+
+    def __init__(
+        self,
+        coordinator: GivEnergyUpdateCoordinator,
+        config_entry: ConfigEntry,
+    ) -> None:
+        """Initialize the Battery Minimum Reserve number."""
+        super().__init__(
+            coordinator,
+            config_entry,
+            NumberEntityDescription(
+                key="battery_discharge_min_power_reserve",
+                name="Battery Cutoff Limit",
+                icon=Icon.BATTERY_MINUS,
+                native_unit_of_measurement=PERCENTAGE,
+            ),
+        )
+
+        # Values correspond to SOC percentage
+        self._attr_native_min_value = 4
+        self._attr_native_max_value = 100
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Update the current value."""
+
+        def set_battery_power_reserve(client: GivEnergyClient) -> None:
+            client.set_battery_power_reserve(int(value))
+
+        await async_reliable_call(
+            self.hass,
+            self.coordinator,
+            set_battery_power_reserve,
         )
 
 
