@@ -15,7 +15,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_point_in_time
 from homeassistant.util import dt
 
-from custom_components.givenergy_local.givenergy_modbus.model import TimeSlot
+from givenergy_modbus.model import TimeSlot
 
 from .const import DOMAIN, LOGGER, Icon
 from .coordinator import GivEnergyUpdateCoordinator

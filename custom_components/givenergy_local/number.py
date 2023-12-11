@@ -1,7 +1,7 @@
 """Home Assistant number entity descriptions."""
 from __future__ import annotations
 
-from custom_components.givenergy_local.givenergy_modbus.client.commands import (
+from givenergy_modbus.client.commands import (
     set_battery_soc_reserve,
     set_battery_power_reserve,
     set_battery_charge_limit,

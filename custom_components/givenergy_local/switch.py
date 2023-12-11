@@ -8,7 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.givenergy_local.givenergy_modbus.client.commands import (
+from givenergy_modbus.client.commands import (
     set_discharge_mode_max_power,
     set_discharge_mode_to_match_demand,
     set_enable_charge,

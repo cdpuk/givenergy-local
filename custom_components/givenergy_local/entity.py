@@ -1,6 +1,6 @@
 """Home Assistant entity descriptions."""
-from custom_components.givenergy_local.givenergy_modbus.model.inverter import Model
-from custom_components.givenergy_local.givenergy_modbus.model.plant import (
+from givenergy_modbus.model.inverter import Model
+from givenergy_modbus.model.plant import (
     Battery,
     Inverter,
     Plant,

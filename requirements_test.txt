@@ -1,2 +1,2 @@
-givenergy-modbus==0.10.1
+givenergy-modbus @ git+https://github.com/cdpuk/givenergy-modbus@1.0-unofficial
 pytest-homeassistant-custom-component
