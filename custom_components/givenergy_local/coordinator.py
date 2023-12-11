@@ -9,8 +9,8 @@ import async_timeout
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .givenergy_modbus.client.client import Client
-from .givenergy_modbus.model.plant import Plant
+from givenergy_modbus.client.client import Client
+from givenergy_modbus.model.plant import Plant
 
 _LOGGER = getLogger(__name__)
 

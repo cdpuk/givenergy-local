@@ -7,7 +7,7 @@ from homeassistant.const import ATTR_DEVICE_ID
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import device_registry as dr
 import voluptuous as vol
-from custom_components.givenergy_local.givenergy_modbus.client.commands import (
+from givenergy_modbus.client.commands import (
     RegisterMap,
     WriteHoldingRegisterRequest,
     set_discharge_mode_max_power,
@@ -18,9 +18,9 @@ from custom_components.givenergy_local.givenergy_modbus.client.commands import (
     set_enable_charge,
     set_charge_slot_1,
 )
-from custom_components.givenergy_local.givenergy_modbus.model import TimeSlot
+from givenergy_modbus.model import TimeSlot
 
-from custom_components.givenergy_local.givenergy_modbus.pdu.transparent import (
+from givenergy_modbus.pdu.transparent import (
     TransparentRequest,
 )
 

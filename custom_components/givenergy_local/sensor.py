@@ -5,7 +5,7 @@ from collections.abc import Mapping
 
 from typing import Any
 
-from .givenergy_modbus.model.inverter import Model
+from givenergy_modbus.model.inverter import Model
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
