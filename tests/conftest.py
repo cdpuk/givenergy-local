@@ -51,8 +51,8 @@ def mock_plant_fixture():
     """Mock enough inverter and battery data to allow platform setup to succeed."""
     with patch("custom_components.givenergy_local.coordinator.Plant") as mock_ge_plant:
         inverter = MagicMock()
-        inverter.inverter_serial_number = "SD12345678"
-        inverter.inverter_model = "Mock Inverter"
+        inverter.serial_number = "SD12345678"
+        inverter.model = "Mock Inverter"
         inverter.firmware_version = "MOCK"
         inverter.temp_inverter_heatsink = 30
         inverter.temp_battery = 20

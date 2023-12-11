@@ -129,10 +129,12 @@ class WriteHoldingRegisterRequest(WriteHoldingRegister, TransparentRequest):
 
     def _update_check_code(self):
         crc_builder = PayloadEncoder()
+        crc_builder.add_8bit_uint(self.slave_address)
         crc_builder.add_8bit_uint(self.transparent_function_code)
-        crc_builder.add_16bit_uint(self.register)
-        crc_builder.add_16bit_uint(self.value)
+        crc_builder.add_16bit_uint(self.register)  # TODO: base_register?
+        crc_builder.add_16bit_uint(self.value)  # TODO: register_count?
         self.check = crc_builder.crc
+        self.check = int.from_bytes(self.check.to_bytes(2, "little"), "big")
         self._builder.add_16bit_uint(self.check)
 
     def expected_response(self):

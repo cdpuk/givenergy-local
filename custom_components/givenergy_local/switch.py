@@ -3,16 +3,21 @@ from __future__ import annotations
 
 from typing import Any
 
-from custom_components.givenergy_local.givenergy_modbus.client.client import Client
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, Icon
+from custom_components.givenergy_local.givenergy_modbus.client.commands import (
+    set_discharge_mode_max_power,
+    set_discharge_mode_to_match_demand,
+    set_enable_charge,
+    set_enable_discharge,
+)
+
+from .const import COMMAND_RETRIES, COMMAND_TIMEOUT, DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import InverterEntity
-from .givenergy_ext import async_reliable_call
 
 
 async def async_setup_entry(
@@ -58,26 +63,14 @@ class InverterChargeSwitch(InverterEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable AC charging, subject to charge slot configuration."""
-
-        def enable_ac_charge(client: Client) -> None:
-            client.enable_charge()
-
-        await async_reliable_call(
-            self.hass,
-            self.coordinator,
-            enable_ac_charge,
+        self.coordinator.client.execute(
+            set_enable_charge(True), COMMAND_TIMEOUT, COMMAND_RETRIES
         )
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Disable AC charging, subject to charge slot configuration."""
-
-        def disable_ac_charge(client: Client) -> None:
-            client.disable_charge()
-
-        await async_reliable_call(
-            self.hass,
-            self.coordinator,
-            disable_ac_charge,
+        self.coordinator.client.execute(
+            set_enable_charge(False), COMMAND_TIMEOUT, COMMAND_RETRIES
         )
 
 
@@ -108,26 +101,14 @@ class InverterDischargeSwitch(InverterEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable DC charging, subject to mode and discharge slot configuration."""
-
-        def enable_discharge(client: Client) -> None:
-            client.enable_discharge()
-
-        await async_reliable_call(
-            self.hass,
-            self.coordinator,
-            enable_discharge,
+        self.coordinator.client.execute(
+            set_enable_discharge(True), COMMAND_TIMEOUT, COMMAND_RETRIES
         )
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Disable DC discharging, subject to mode and discharge slot configuration."""
-
-        def disable_discharge(client: Client) -> None:
-            client.disable_discharge()
-
-        await async_reliable_call(
-            self.hass,
-            self.coordinator,
-            disable_discharge,
+        self.coordinator.client.execute(
+            set_enable_discharge(False), COMMAND_TIMEOUT, COMMAND_RETRIES
         )
 
 
@@ -158,24 +139,12 @@ class InverterEcoModeSwitch(InverterEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable Eco/Dynamic mode."""
-
-        def enable_eco_mode(client: Client) -> None:
-            client.set_battery_discharge_mode_demand()
-
-        await async_reliable_call(
-            self.hass,
-            self.coordinator,
-            enable_eco_mode,
+        self.coordinator.client.execute(
+            set_discharge_mode_to_match_demand(), COMMAND_TIMEOUT, COMMAND_RETRIES
         )
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Disable Eco/Dynamic mode."""
-
-        def disable_eco_mode(client: Client) -> None:
-            client.set_battery_discharge_mode_max_power()
-
-        await async_reliable_call(
-            self.hass,
-            self.coordinator,
-            disable_eco_mode,
+        self.coordinator.client.execute(
+            set_discharge_mode_max_power(), COMMAND_TIMEOUT, COMMAND_RETRIES
         )
