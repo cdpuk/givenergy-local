@@ -12,7 +12,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, MANUFACTURER
 from .coordinator import GivEnergyUpdateCoordinator
 
-# Maps battery design capacities (as seen under 'battery_design_capacity_2') to model names.
+# Maps battery design capacities (as seen under 'cap_design2') to model names.
 # Keys should match the values seen in the datasheets.
 _BATTERY_CAPACITY_TO_MODEL = {
     51: "Giv-Bat-ECO 2.6",
@@ -101,7 +101,7 @@ class BatteryEntity(CoordinatorEntity[Plant]):
             model=self.battery_model,
             sw_version=str(self.data.bms_firmware_version),
             configuration_url="https://givenergy.cloud",
-            via_device=(DOMAIN, self.coordinator.data.inverter.inverter_serial_number),
+            via_device=(DOMAIN, self.coordinator.data.inverter.serial_number),
         )
 
     @property
@@ -117,12 +117,12 @@ class BatteryEntity(CoordinatorEntity[Plant]):
     @property
     def battery_model(self) -> str:
         """
-        Get a battery model name based on the value from 'battery_design_capacity_2'.
+        Get a battery model name based on the value from 'cap_design2'.
 
         Unrecognised values are described with a capacity in Ah to allow these to be easily added
         in a future release.
         """
-        capacity = int(self.data.battery_design_capacity_2)
+        capacity = int(self.data.cap_design2)
         model_name = _BATTERY_CAPACITY_TO_MODEL.get(capacity)
 
         if model_name is None:

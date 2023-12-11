@@ -1,7 +1,7 @@
 """The GivEnergy update coordinator."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from logging import getLogger
 from typing import Any, Coroutine
 
@@ -13,7 +13,6 @@ from .givenergy_modbus.client.client import Client
 from .givenergy_modbus.model.plant import Plant
 
 _LOGGER = getLogger(__name__)
-_FULL_REFRESH_INTERVAL = timedelta(minutes=5)
 
 
 class GivEnergyException(Exception):
@@ -21,10 +20,7 @@ class GivEnergyException(Exception):
 
 
 class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
-    """Update coordinator that enables efficient batched updates to all entities associated with an inverter."""
-
-    require_full_refresh = True
-    last_full_refresh = datetime.min
+    """Update coordinator that fetches data from a GivEnergy inverter."""
 
     def __init__(self, hass: HomeAssistant, host: str) -> None:
         """Initialize my coordinator."""
@@ -43,30 +39,13 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         return await super().async_shutdown()
 
     async def _async_update_data(self) -> Plant:
-        """Fetch data from API endpoint.
-
-        This is the place to pre-process the data to lookup tables
-        so entities can quickly look up their data.
-        """
+        """Fetch data from the inverter."""
         if not self.client.connected:
             await self.client.connect()
 
-        if self.last_full_refresh < (datetime.utcnow() - _FULL_REFRESH_INTERVAL):
-            self.require_full_refresh = True
-
         try:
             async with async_timeout.timeout(10):
-                await self._fetch_data(self.require_full_refresh)
-                return self.client.plant
+                _LOGGER.info("Fetching data from %s", self.host)
+                return await self.client.refresh_plant()
         except Exception as err:
-            raise UpdateFailed(f"Error communicating with API: {err}") from err
-
-    async def _fetch_data(self, full_refresh: bool) -> None:
-        """Fetch data from the inverter via modbus."""
-        _LOGGER.info("Fetching data from %s", self.host)
-        await self.client.refresh_plant()
-
-    async def async_request_full_refresh(self) -> None:
-        """Force a full update from the inverter."""
-        self.require_full_refresh = True
-        await self.async_request_refresh()
+            raise UpdateFailed(f"Error communicating with inverter: {err}") from err

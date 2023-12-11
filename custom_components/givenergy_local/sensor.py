@@ -265,20 +265,20 @@ _BATTERY_MODE_SENSOR = SensorEntityDescription(
 
 _BASIC_BATTERY_SENSORS = [
     SensorEntityDescription(
-        key="battery_soc",
+        key="soc",
         name="Battery Charge",
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
     ),
     SensorEntityDescription(
-        key="battery_num_cycles",
+        key="num_cycles",
         name="Battery Cycles",
         icon=Icon.BATTERY_CYCLES,
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     SensorEntityDescription(
-        key="v_battery_out",
+        key="v_out",
         name="Battery Output Voltage",
         icon=Icon.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
@@ -287,7 +287,7 @@ _BASIC_BATTERY_SENSORS = [
 ]
 
 _BATTERY_REMAINING_CAPACITY_SENSOR = SensorEntityDescription(
-    key="battery_remaining_capacity",
+    key="cap_remaining",
     name="Battery Remaining Capacity",
     icon=Icon.BATTERY,
     device_class=SensorDeviceClass.ENERGY,
@@ -296,7 +296,7 @@ _BATTERY_REMAINING_CAPACITY_SENSOR = SensorEntityDescription(
 )
 
 _BATTERY_CELLS_VOLTAGE_SENSOR = SensorEntityDescription(
-    key="v_battery_cells_sum",
+    key="v_cells_sum",
     name="Battery Cells Voltage",
     icon=Icon.BATTERY,
     state_class=SensorStateClass.MEASUREMENT,
@@ -429,7 +429,7 @@ class ConsumptionTodaySensor(InverterBasicSensor):
 
         # For AC inverters, PV output doesn't count as part of the inverter output,
         # so we need to add it on.
-        if self.data.inverter_model == Model.AC:
+        if self.data.model == Model.AC:
             consumption_today += self.data.e_pv1_day + self.data.e_pv2_day
 
         return consumption_today
@@ -450,7 +450,7 @@ class ConsumptionTotalSensor(InverterBasicSensor):
 
         # For AC inverters, PV output doesn't count as part of the inverter output,
         # so we need to add it on.
-        if self.data.inverter_model == Model.AC:
+        if self.data.model == Model.AC:
             consumption_total += self.data.e_pv_total
 
         return consumption_total
