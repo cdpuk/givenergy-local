@@ -10,11 +10,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 import voluptuous as vol
 
-from .const import CONF_HOST, CONF_NUM_BATTERIES, DOMAIN, LOGGER
+from .const import CONF_HOST, DOMAIN, LOGGER
 
-STEP_USER_DATA_SCHEMA = vol.Schema(
-    {vol.Required(CONF_HOST): str, vol.Required(CONF_NUM_BATTERIES): int}
-)
+STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
 
 
 async def read_inverter_serial(hass: HomeAssistant, data: dict[str, Any]) -> str:
