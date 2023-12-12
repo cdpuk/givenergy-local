@@ -17,6 +17,17 @@ _BATTERY_CAPACITY_TO_MODEL = {
     186: "Giv-Bat 9.5",
 }
 
+# Maps models to human readable descriptions
+_MODEL_DESCRIPTIONS = {
+    Model.HYBRID: "Hybrid",
+    Model.AC: "AC",
+    Model.HYBRID_3PH: "Hybrid (3-phase)",
+    Model.AC_3PH: "AC (3-phase)",
+    Model.EMS: "EMS",
+    Model.GATEWAY: "Gateway",
+    Model.ALL_IN_ONE: "All In One",
+}
+
 
 class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     """An entity that derives data from a GivEnergy inverter."""
@@ -33,7 +44,7 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
         """Inverter device information for the entity."""
 
         model: Model = self.data.model
-        model_name = f"TODO_{model}"
+        model_name = _MODEL_DESCRIPTIONS[model]
 
         return DeviceInfo(
             identifiers={(DOMAIN, self.data.serial_number)},
