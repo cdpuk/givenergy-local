@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 
 from typing import Any
 
@@ -28,6 +29,14 @@ from homeassistant.helpers.typing import StateType
 from .const import DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import BatteryEntity, InverterEntity
+
+
+@dataclass
+class MappedSensorEntityDescription(SensorEntityDescription):
+    """Sensor description providing a lookup key to obtain the value."""
+
+    ge_modbus_key: str | None = None
+
 
 _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
@@ -264,43 +273,48 @@ _BATTERY_MODE_SENSOR = SensorEntityDescription(
 )
 
 _BASIC_BATTERY_SENSORS = [
-    SensorEntityDescription(
-        key="soc",
+    MappedSensorEntityDescription(
+        key="battery_soc",
         name="Battery Charge",
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
+        ge_modbus_key="soc",
     ),
-    SensorEntityDescription(
-        key="num_cycles",
+    MappedSensorEntityDescription(
+        key="battery_num_cycles",
         name="Battery Cycles",
         icon=Icon.BATTERY_CYCLES,
         state_class=SensorStateClass.TOTAL_INCREASING,
+        ge_modbus_key="num_cycles",
     ),
-    SensorEntityDescription(
-        key="v_out",
+    MappedSensorEntityDescription(
+        key="v_battery_out",
         name="Battery Output Voltage",
         icon=Icon.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
+        ge_modbus_key="v_out",
     ),
 ]
 
-_BATTERY_REMAINING_CAPACITY_SENSOR = SensorEntityDescription(
-    key="cap_remaining",
+_BATTERY_REMAINING_CAPACITY_SENSOR = MappedSensorEntityDescription(
+    key="battery_remaining_capacity",
     name="Battery Remaining Capacity",
     icon=Icon.BATTERY,
     device_class=SensorDeviceClass.ENERGY,
     state_class=SensorStateClass.TOTAL,
     native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+    ge_modbus_key="cap_remaining",
 )
 
-_BATTERY_CELLS_VOLTAGE_SENSOR = SensorEntityDescription(
-    key="v_cells_sum",
+_BATTERY_CELLS_VOLTAGE_SENSOR = MappedSensorEntityDescription(
+    key="v_battery_cells_sum",
     name="Battery Cells Voltage",
     icon=Icon.BATTERY,
     state_class=SensorStateClass.MEASUREMENT,
     native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
+    ge_modbus_key="v_cells_sum",
 )
 
 
@@ -488,11 +502,13 @@ class BatteryBasicSensor(BatteryEntity, SensorEntity):
     values as reported by the inverter itself and the BMS.
     """
 
+    entity_description: MappedSensorEntityDescription
+
     def __init__(
         self,
         coordinator: GivEnergyUpdateCoordinator,
         config_entry: ConfigEntry,
-        entity_description: SensorEntityDescription,
+        entity_description: MappedSensorEntityDescription,
         battery_id: int,
     ) -> None:
         """Initialize a sensor based on an entity description."""
@@ -503,7 +519,7 @@ class BatteryBasicSensor(BatteryEntity, SensorEntity):
     @property
     def native_value(self) -> StateType:
         """Get the register value whose name matches the entity key."""
-        return self.data.dict().get(self.entity_description.key)
+        return self.data.dict().get(self.entity_description.ge_modbus_key)
 
 
 class BatteryRemainingCapacitySensor(BatteryBasicSensor):
