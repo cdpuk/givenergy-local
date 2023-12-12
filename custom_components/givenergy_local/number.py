@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 from givenergy_modbus.client.commands import (
-    set_battery_soc_reserve,
-    set_battery_power_reserve,
+    RegisterMap,
     set_battery_charge_limit,
     set_battery_discharge_limit,
+    set_battery_power_reserve,
+    set_battery_soc_reserve,
 )
+from givenergy_modbus.pdu.write_registers import WriteHoldingRegisterRequest
 from homeassistant.components.number import (
     NumberDeviceClass,
     NumberEntity,
@@ -20,8 +22,8 @@ from homeassistant.helpers.typing import StateType
 
 from .const import (
     BATTERY_NOMINAL_VOLTAGE,
-    COMMAND_TIMEOUT,
     COMMAND_RETRIES,
+    COMMAND_TIMEOUT,
     DOMAIN,
     Icon,
 )
@@ -101,8 +103,12 @@ class ACChargeLimitNumber(InverterBasicNumber):
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value."""
+        target_soc = int(value)
+        if not 4 <= target_soc <= 100:
+            raise ValueError(f"Charge Target SOC ({target_soc}) must be in [4-100]%")
+
         await self.coordinator.client.execute(
-            set_charge_target(int(value)), COMMAND_TIMEOUT, COMMAND_RETRIES
+            [WriteHoldingRegisterRequest(RegisterMap.CHARGE_TARGET_SOC, target_soc)]
         )
         await self.coordinator.async_request_refresh()
 

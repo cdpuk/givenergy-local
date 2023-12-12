@@ -5,6 +5,7 @@ from datetime import datetime, time, timedelta
 
 from typing import Any, Mapping
 
+from givenergy_modbus.model import TimeSlot
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
@@ -14,8 +15,6 @@ from homeassistant.core import CALLBACK_TYPE, HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_point_in_time
 from homeassistant.util import dt
-
-from givenergy_modbus.model import TimeSlot
 
 from .const import DOMAIN, LOGGER, Icon
 from .coordinator import GivEnergyUpdateCoordinator
@@ -148,13 +147,14 @@ class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
     @property
     def slot(self) -> TimeSlot:
         """Get the slot definition."""
-        return self.data.dict().get(self.entity_description.key)  # type: ignore
+        return self.data.dict().get(self.entity_description.key)
 
     @property
     def is_on(self) -> bool | None:
         """Determine whether we're currently within the slot."""
         now: time = dt.now().time()
-        return self.slot.start <= now < self.slot.end
+        is_on: bool = self.slot.start <= now < self.slot.end
+        return is_on
 
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
