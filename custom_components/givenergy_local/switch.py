@@ -3,17 +3,16 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
 from givenergy_modbus.client.commands import (
     set_discharge_mode_max_power,
     set_discharge_mode_to_match_demand,
     set_enable_charge,
     set_enable_discharge,
 )
+from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import COMMAND_RETRIES, COMMAND_TIMEOUT, DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator

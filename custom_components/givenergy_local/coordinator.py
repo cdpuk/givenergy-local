@@ -3,14 +3,12 @@ from __future__ import annotations
 
 from datetime import timedelta
 from logging import getLogger
-from typing import Any, Coroutine
 
 import async_timeout
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-
 from givenergy_modbus.client.client import Client
 from givenergy_modbus.model.plant import Plant
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 _LOGGER = getLogger(__name__)
 
@@ -34,9 +32,10 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         self.host = host
         self.client = Client(host, 8899)
 
-    async def async_shutdown(self) -> Coroutine[Any, Any, None]:
+    async def async_shutdown(self) -> None:
+        """Terminate the modbus connection and shut down the coordinator."""
         await self.client.close()
-        return await super().async_shutdown()
+        await super().async_shutdown()
 
     async def _async_update_data(self) -> Plant:
         """Fetch data from the inverter."""
