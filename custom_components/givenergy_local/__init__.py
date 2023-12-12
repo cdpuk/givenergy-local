@@ -6,7 +6,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from .const import CONF_HOST, CONF_NUM_BATTERIES, DOMAIN, LOGGER
+from .const import CONF_HOST, DOMAIN
 from .coordinator import GivEnergyUpdateCoordinator
 from .services import async_setup_services, async_unload_services
 
@@ -53,21 +53,3 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry."""
     await async_unload_entry(hass, entry)
     await async_setup_entry(hass, entry)
-
-
-async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Migrates old config versions to the latest."""
-
-    LOGGER.debug("Migrating from version %s", entry.version)
-
-    if entry.version == 1:
-        new = {**entry.data}
-        new[CONF_NUM_BATTERIES] = 0
-        entry.version = 2
-        hass.config_entries.async_update_entry(entry, data=new)
-
-        LOGGER.info("Migration to version %s successful", entry.version)
-        return True
-    else:
-        LOGGER.error("Existing schema version %s is not supported", entry.version)
-        return False
