@@ -1,2 +1,2 @@
-givenergy-modbus @ git+https://github.com/cdpuk/givenergy-modbus@1.0-unofficial
+givenergy-modbus @ git+https://github.com/cdpuk/givenergy-modbus@aa5af8f8038408ebec07bfcea834b6b4a8493f25
 pytest-homeassistant-custom-component
