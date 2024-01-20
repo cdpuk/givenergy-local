@@ -5,8 +5,8 @@ from datetime import timedelta
 from logging import getLogger
 
 import async_timeout
-from givenergy_modbus.client.client import Client
-from givenergy_modbus.model.plant import Plant
+from custom_components.givenergy_local.givenergy_modbus.client.client import Client
+from custom_components.givenergy_local.givenergy_modbus.model.plant import Plant
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 import async_timeout
-from givenergy_modbus.client.client import Client
+from custom_components.givenergy_local.givenergy_modbus.client.client import Client
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult

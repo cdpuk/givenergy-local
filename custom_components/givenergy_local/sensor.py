@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from typing import Any
 
-from givenergy_modbus.model.inverter import Model
+from custom_components.givenergy_local.givenergy_modbus.model.inverter import Model
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,

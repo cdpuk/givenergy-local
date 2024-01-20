@@ -1,14 +1,16 @@
 """Home Assistant number entity descriptions."""
 from __future__ import annotations
 
-from givenergy_modbus.client.commands import (
+from custom_components.givenergy_local.givenergy_modbus.client.commands import (
     RegisterMap,
     set_battery_charge_limit,
     set_battery_discharge_limit,
     set_battery_power_reserve,
     set_battery_soc_reserve,
 )
-from givenergy_modbus.pdu.write_registers import WriteHoldingRegisterRequest
+from custom_components.givenergy_local.givenergy_modbus.pdu.write_registers import (
+    WriteHoldingRegisterRequest,
+)
 from homeassistant.components.number import (
     NumberDeviceClass,
     NumberEntity,

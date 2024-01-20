@@ -6,8 +6,8 @@ import argparse
 import json
 import logging
 
-from givenergy_modbus.client import GivEnergyClient
-from givenergy_modbus.model.plant import Plant
+from custom_components.givenergy_local.givenergy_modbus.client import GivEnergyClient
+from custom_components.givenergy_local.givenergy_modbus.model.plant import Plant
 
 logging.basicConfig(format="%(name)s %(levelname)s %(message)s", level=logging.INFO)
 
