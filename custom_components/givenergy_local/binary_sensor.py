@@ -5,7 +5,7 @@ from datetime import datetime, time, timedelta
 
 from typing import Any, Mapping
 
-from givenergy_modbus.model import TimeSlot
+from custom_components.givenergy_local.givenergy_modbus.model import TimeSlot
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,

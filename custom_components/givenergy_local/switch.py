@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from givenergy_modbus.client.commands import (
+from custom_components.givenergy_local.givenergy_modbus.client.commands import (
     set_discharge_mode_max_power,
     set_discharge_mode_to_match_demand,
     set_enable_charge,

@@ -3,7 +3,7 @@ import datetime
 
 from typing import Any
 
-from givenergy_modbus.client.commands import (
+from custom_components.givenergy_local.givenergy_modbus.client.commands import (
     RegisterMap,
     WriteHoldingRegisterRequest,
     set_charge_slot_1,
@@ -14,8 +14,10 @@ from givenergy_modbus.client.commands import (
     set_enable_discharge,
     set_mode_dynamic,
 )
-from givenergy_modbus.model import TimeSlot
-from givenergy_modbus.pdu.transparent import TransparentRequest
+from custom_components.givenergy_local.givenergy_modbus.model import TimeSlot
+from custom_components.givenergy_local.givenergy_modbus.pdu.transparent import (
+    TransparentRequest,
+)
 from homeassistant.const import ATTR_DEVICE_ID
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import device_registry as dr

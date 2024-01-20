@@ -1,6 +1,10 @@
 """Home Assistant entity descriptions."""
-from givenergy_modbus.model.inverter import Model
-from givenergy_modbus.model.plant import Battery, Inverter, Plant
+from custom_components.givenergy_local.givenergy_modbus.model.inverter import Model
+from custom_components.givenergy_local.givenergy_modbus.model.plant import (
+    Battery,
+    Inverter,
+    Plant,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
