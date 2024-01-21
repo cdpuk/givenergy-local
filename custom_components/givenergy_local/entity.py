@@ -1,5 +1,8 @@
 """Home Assistant entity descriptions."""
-from custom_components.givenergy_local.givenergy_modbus.model.inverter import Model
+from custom_components.givenergy_local.givenergy_modbus.model.inverter import (
+    Generation,
+    Model,
+)
 from custom_components.givenergy_local.givenergy_modbus.model.plant import (
     Battery,
     Inverter,
@@ -49,11 +52,15 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
 
         model: Model = self.data.model
         model_name = _MODEL_DESCRIPTIONS[model]
+        power_description = ""
+        if max_power := self.data.inverter_max_power:
+            power_description = f"{max_power / 1000}kW"
+        model_description = f"{model_name} {self.data.generation} {power_description}"
 
         return DeviceInfo(
             identifiers={(DOMAIN, self.data.serial_number)},
             name="Solar Inverter",
-            model=model_name,
+            model=model_description,
             manufacturer=MANUFACTURER,
             sw_version=self.data.firmware_version,
             configuration_url="https://givenergy.cloud",
@@ -77,12 +84,16 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     @property
     def inverter_max_battery_power(self) -> int:
         """Get the maximum battery charge/discharge power for this model."""
-        if self.inverter_model == Model.EMS:  # TODO: Gen2?
-            return 3600
-        elif self.inverter_model == Model.AC:
-            return 3000
-        else:
+        if self.data.generation == Generation.GEN1:
+            if self.inverter_model == Model.AC:
+                return 3000
+            if self.inverter_model == Model.ALL_IN_ONE:
+                return 6000
             return 2600
+
+        if self.inverter_model == Model.AC:
+            return 5000
+        return 3600
 
 
 class BatteryEntity(CoordinatorEntity[Plant]):

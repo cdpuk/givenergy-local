@@ -1,4 +1,5 @@
 from enum import IntEnum, StrEnum
+import math
 
 from pydantic import BaseConfig, create_model
 
@@ -26,9 +27,31 @@ class Model(StrEnum):
     ALL_IN_ONE = "8"
 
     @classmethod
-    def _missing_(cls, key):
+    def _missing_(cls, value):
         """Pick model from the first digit of the device type code."""
-        return cls(key[0])
+        return cls(value[0])
+
+
+class Generation(StrEnum):
+    """Known Generations"""
+
+    GEN1 = "Gen 1"
+    GEN2 = "Gen 2"
+    GEN3 = "Gen 3"
+
+    @classmethod
+    def _missing_(cls, value: int):
+        """Pick generation from the arm_firmware_version."""
+        arm_firmware_version_to_gen = {
+            3: cls.GEN3,
+            8: cls.GEN2,
+            9: cls.GEN2,
+        }
+        key = math.floor(int(value) / 100)
+        if gen := arm_firmware_version_to_gen.get(key):
+            return gen
+        else:
+            return cls.GEN1
 
 
 class UsbDevice(IntEnum):
@@ -103,6 +126,7 @@ class InverterRegisterGetter(RegisterGetter):
         # Holding Registers, block 0-59
         #
         "device_type_code": Def(C.hex, None, HR(0)),
+        "inverter_max_power": Def(C.hex, C.inverter_max_power, HR(0)),
         "model": Def(C.hex, Model, HR(0)),
         "module": Def(C.uint32, (C.hex, 8), HR(1), HR(2)),
         "num_mppt": Def((C.duint8, 0), None, HR(3)),
@@ -117,6 +141,7 @@ class InverterRegisterGetter(RegisterGetter):
         "dsp_firmware_version": Def(C.uint16, None, HR(19)),
         "enable_charge_target": Def(C.bool, None, HR(20)),
         "arm_firmware_version": Def(C.uint16, None, HR(21)),
+        "generation": Def(C.uint16, Generation, HR(21)),
         "firmware_version": Def(C.firmware_version, None, HR(19), HR(21)),
         "usb_device_inserted": Def(C.uint16, UsbDevice, HR(22)),
         "select_arm_chip": Def(C.bool, None, HR(23)),
