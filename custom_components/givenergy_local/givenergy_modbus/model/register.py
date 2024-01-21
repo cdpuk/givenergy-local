@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from json import JSONEncoder
+import math
 from typing import Any, Callable, Optional, Union
 
 from pydantic.utils import GetterDict
@@ -75,6 +76,23 @@ class Converter:
         """Represent ARM & DSP firmware versions in the same format as the dashboard."""
         if dsp_version is not None and arm_version is not None:
             return f"D0.{dsp_version}-A0.{arm_version}"
+
+    @staticmethod
+    def inverter_max_power(device_type_code: str) -> Optional[int]:
+        """Determine max inverter power from device_type_code."""
+        dtc_to_power = {
+            "2001": 5000,
+            "2002": 4600,
+            "2003": 3600,
+            "3001": 3000,
+            "3002": 3600,
+            "4001": 6000,
+            "4002": 8000,
+            "4003": 10000,
+            "4004": 11000,
+            "8001": 6000,
+        }
+        return dtc_to_power.get(device_type_code)
 
     @staticmethod
     def hex(val: int, width: int = 4) -> str:
@@ -155,6 +173,8 @@ class RegisterGetter(GetterDict):
             if isinstance(r.post_conv, tuple):
                 return r.post_conv[0](val, *r.post_conv[1:])
             else:
+                if not isinstance(r.post_conv, Callable):
+                    pass
                 return r.post_conv(val)
         return val
 
