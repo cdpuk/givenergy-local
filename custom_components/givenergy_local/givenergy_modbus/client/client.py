@@ -78,18 +78,24 @@ class Client:
     async def close(self):
         """Disconnect from the remote host and clean up tasks and queues."""
         self.connected = False
+
         if self.tx_queue:
             while not self.tx_queue.empty():
                 _, future = self.tx_queue.get_nowait()
                 if future:
                     future.cancel()
-        self.network_producer_task.cancel()
+
+        if self.network_producer_task:
+            self.network_producer_task.cancel()
+
         if hasattr(self, "writer") and self.writer:
             self.writer.close()
             await self.writer.wait_closed()
             del self.writer
 
-        self.network_consumer_task.cancel()
+        if self.network_producer_task:
+            self.network_consumer_task.cancel()
+
         if hasattr(self, "reader") and self.reader:
             self.reader.feed_eof()
             self.reader.set_exception(RuntimeError("cancelling"))
@@ -174,6 +180,7 @@ class Client:
                         _logger.info(f"{message}")
 
                 future = self.expected_responses.get(message.shape_hash(), None)
+
                 if future and not future.done():
                     future.set_result(message)
                 # try:
@@ -239,7 +246,7 @@ class Client:
         )
         if existing_response_future and not existing_response_future.done():
             _logger.debug(
-                f"Cancelling existing in-flight request and replacing: {request}"
+                "Cancelling existing in-flight request and replacing: %s", request
             )
             existing_response_future.cancel()
         response_future: Future[
@@ -256,22 +263,33 @@ class Client:
             await asyncio.wait_for(
                 frame_sent, timeout=self.tx_queue.qsize() + 1
             )  # this should only happen if the producer task is stuck
-            await asyncio.wait_for(response_future, timeout=timeout)
-            if response_future.done():
-                response = response_future.result()
-                if tries > 0:
-                    _logger.debug(f"Received {response} after {tries} tries")
-                if response.error:
-                    _logger.error(f"Received error response, retrying: {response}")
-                else:
-                    return response
+
+            try:
+                await asyncio.wait_for(response_future, timeout=timeout)
+                if response_future.done():
+                    response = response_future.result()
+                    if tries > 0:
+                        _logger.debug("Received %s after %d tries", response, tries)
+                    if response.error:
+                        _logger.error("Received error response, retrying: %s", response)
+                    else:
+                        return response
+            except asyncio.TimeoutError:
+                pass
+
             tries += 1
             _logger.debug(
-                f"Timeout awaiting {expected_response} (future: {response_future}), "
-                f"attempting retry {tries} of {retries}"
+                "Timeout awaiting %s (future: %s), attempting retry %d of %d",
+                expected_response,
+                response_future,
+                tries,
+                retries,
             )
 
         _logger.warning(
-            f"Timeout awaiting {expected_response} after {tries} tries at {timeout}s, giving up"
+            "Timeout awaiting %s after %d tries at %ds, giving up",
+            expected_response,
+            tries,
+            timeout,
         )
         raise asyncio.TimeoutError()
