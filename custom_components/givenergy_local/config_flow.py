@@ -4,23 +4,22 @@ from __future__ import annotations
 from typing import Any
 
 import async_timeout
-from custom_components.givenergy_local.givenergy_modbus.client.client import Client
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 import voluptuous as vol
 
 from .const import CONF_HOST, DOMAIN, LOGGER
+from .givenergy_modbus.client.client import Client
 
 STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
 
 
-async def read_inverter_serial(hass: HomeAssistant, data: dict[str, Any]) -> str:
+async def read_inverter_serial(data: dict[str, Any]) -> str:
     """Validate user input by reading the inverter serial number."""
     client = Client(data[CONF_HOST], 8899)
     async with async_timeout.timeout(10):
         await client.connect()
-        await client.refresh_plant(timeout=5.0)
+        await client.refresh_plant()
         await client.close()
 
     serial_no: str = client.plant.inverter.serial_number
@@ -44,7 +43,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         errors = {}
 
         try:
-            serial_no = await read_inverter_serial(self.hass, user_input)
+            serial_no = await read_inverter_serial(user_input)
         except Exception:  # pylint: disable=broad-except
             LOGGER.exception("Failed to validate inverter configuration")
             errors["base"] = "cannot_connect"

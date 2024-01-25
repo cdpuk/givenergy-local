@@ -3,7 +3,14 @@ import datetime
 
 from typing import Any
 
-from custom_components.givenergy_local.givenergy_modbus.client.commands import (
+from homeassistant.const import ATTR_DEVICE_ID
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers import device_registry as dr
+import voluptuous as vol
+
+from .const import DOMAIN, LOGGER
+from .coordinator import GivEnergyUpdateCoordinator
+from .givenergy_modbus.client.commands import (
     RegisterMap,
     WriteHoldingRegisterRequest,
     set_charge_slot_1,
@@ -14,17 +21,8 @@ from custom_components.givenergy_local.givenergy_modbus.client.commands import (
     set_enable_discharge,
     set_mode_dynamic,
 )
-from custom_components.givenergy_local.givenergy_modbus.model import TimeSlot
-from custom_components.givenergy_local.givenergy_modbus.pdu.transparent import (
-    TransparentRequest,
-)
-from homeassistant.const import ATTR_DEVICE_ID
-from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.helpers import device_registry as dr
-import voluptuous as vol
-
-from .const import COMMAND_RETRIES, COMMAND_TIMEOUT, DOMAIN, LOGGER
-from .coordinator import GivEnergyUpdateCoordinator
+from .givenergy_modbus.model import TimeSlot
+from .givenergy_modbus.pdu.transparent import TransparentRequest
 
 _ATTR_START_TIME = "start_time"
 _ATTR_END_TIME = "end_time"
@@ -132,8 +130,7 @@ async def _async_service_call(
 
     config_entry = entries.pop()
     coordinator: GivEnergyUpdateCoordinator = hass.data[DOMAIN][config_entry]
-    await coordinator.client.execute(commands, COMMAND_TIMEOUT, COMMAND_RETRIES)
-    await coordinator.async_request_refresh()
+    await coordinator.execute(commands)
 
 
 async def _async_activate_mode_eco(hass: HomeAssistant, data: dict[str, Any]) -> None:
