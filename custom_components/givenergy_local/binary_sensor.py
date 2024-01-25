@@ -5,7 +5,6 @@ from datetime import datetime, time, timedelta
 
 from typing import Any, Mapping
 
-from custom_components.givenergy_local.givenergy_modbus.model import TimeSlot
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
@@ -19,6 +18,7 @@ from homeassistant.util import dt
 from .const import DOMAIN, LOGGER, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import InverterEntity
+from .givenergy_modbus.model import TimeSlot
 
 _CHARGE_SLOT_BINARY_SENSORS = [
     BinarySensorEntityDescription(
@@ -147,7 +147,8 @@ class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
     @property
     def slot(self) -> TimeSlot:
         """Get the slot definition."""
-        return self.data.dict().get(self.entity_description.key)
+        slot: TimeSlot = self.data.dict().get(self.entity_description.key)
+        return slot
 
     @property
     def is_on(self) -> bool | None:

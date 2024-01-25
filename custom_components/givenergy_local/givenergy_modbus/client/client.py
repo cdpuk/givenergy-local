@@ -75,7 +75,7 @@ class Client:
         self.connected = True
         _logger.info(f"Connection established to {self.host}:{self.port}")
 
-    async def close(self):
+    async def close(self) -> None:
         """Disconnect from the remote host and clean up tasks and queues."""
         self.connected = False
 
@@ -113,7 +113,7 @@ class Client:
         max_batteries: int = 5,
         timeout: float = 1.0,
         retries: int = 0,
-    ):
+    ) -> Plant:
         """Refresh data about the Plant."""
         reqs = commands.refresh_plant_data(
             full_refresh, self.plant.number_batteries, max_batteries

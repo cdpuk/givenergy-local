@@ -1,4 +1,5 @@
 ---
+exclude: '^custom_components/givenergy_local/givenergy_modbus/.*'
 repos:
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.3.1

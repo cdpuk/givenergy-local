@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 from typing import Any
 
-from custom_components.givenergy_local.givenergy_modbus.model.inverter import Model
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -29,6 +28,7 @@ from homeassistant.helpers.typing import StateType
 from .const import DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import BatteryEntity, InverterEntity
+from .givenergy_modbus.model.inverter import Model
 
 
 @dataclass

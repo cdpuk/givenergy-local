@@ -1,4 +1,8 @@
 """Home Assistant entity descriptions."""
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
 from custom_components.givenergy_local.givenergy_modbus.model.inverter import (
     Generation,
     Model,
@@ -8,9 +12,6 @@ from custom_components.givenergy_local.givenergy_modbus.model.plant import (
     Inverter,
     Plant,
 )
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, MANUFACTURER
 from .coordinator import GivEnergyUpdateCoordinator
@@ -79,7 +80,7 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     @property
     def inverter_model(self) -> Model:
         """Get the inverter model."""
-        return self.data.model
+        return self.data.model  # type: ignore[no-any-return]
 
     @property
     def inverter_max_battery_power(self) -> int:
@@ -129,7 +130,7 @@ class BatteryEntity(CoordinatorEntity[Plant]):
     @property
     def data(self) -> Battery:
         """Get battery data for the entity."""
-        return self.coordinator.data.batteries[self.battery_id]
+        return self.coordinator.data.batteries[self.battery_id]  # type: ignore[no-any-return]
 
     @property
     def available(self) -> bool:

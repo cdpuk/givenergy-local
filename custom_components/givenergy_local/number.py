@@ -1,16 +1,6 @@
 """Home Assistant number entity descriptions."""
 from __future__ import annotations
 
-from custom_components.givenergy_local.givenergy_modbus.client.commands import (
-    RegisterMap,
-    set_battery_charge_limit,
-    set_battery_discharge_limit,
-    set_battery_power_reserve,
-    set_battery_soc_reserve,
-)
-from custom_components.givenergy_local.givenergy_modbus.pdu.write_registers import (
-    WriteHoldingRegisterRequest,
-)
 from homeassistant.components.number import (
     NumberDeviceClass,
     NumberEntity,
@@ -22,15 +12,17 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
-from .const import (
-    BATTERY_NOMINAL_VOLTAGE,
-    COMMAND_RETRIES,
-    COMMAND_TIMEOUT,
-    DOMAIN,
-    Icon,
-)
+from .const import BATTERY_NOMINAL_VOLTAGE, DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import InverterEntity
+from .givenergy_modbus.client.commands import (
+    RegisterMap,
+    set_battery_charge_limit,
+    set_battery_discharge_limit,
+    set_battery_power_reserve,
+    set_battery_soc_reserve,
+)
+from .givenergy_modbus.pdu.write_registers import WriteHoldingRegisterRequest
 
 
 async def async_setup_entry(
@@ -109,10 +101,9 @@ class ACChargeLimitNumber(InverterBasicNumber):
         if not 4 <= target_soc <= 100:
             raise ValueError(f"Charge Target SOC ({target_soc}) must be in [4-100]%")
 
-        await self.coordinator.client.execute(
+        await self.coordinator.execute(
             [WriteHoldingRegisterRequest(RegisterMap.CHARGE_TARGET_SOC, target_soc)]
         )
-        await self.coordinator.async_request_refresh()
 
 
 class BatterySoCReserveNumber(InverterBasicNumber):
@@ -147,10 +138,7 @@ class BatterySoCReserveNumber(InverterBasicNumber):
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value."""
-        await self.coordinator.client.execute(
-            set_battery_soc_reserve(int(value)), COMMAND_TIMEOUT, COMMAND_RETRIES
-        )
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.execute(set_battery_soc_reserve(int(value)))
 
 
 class BatteryMinPowerReserveNumber(InverterBasicNumber):
@@ -179,10 +167,7 @@ class BatteryMinPowerReserveNumber(InverterBasicNumber):
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value."""
-        await self.coordinator.client.execute(
-            set_battery_power_reserve(int(value)), COMMAND_TIMEOUT, COMMAND_RETRIES
-        )
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.execute(set_battery_power_reserve(int(value)))
 
 
 class InverterBatteryPowerLimitNumber(InverterBasicNumber):
@@ -259,10 +244,7 @@ class InverterBatteryChargeLimitNumber(InverterBatteryPowerLimitNumber):
     async def async_set_native_value(self, value: float) -> None:
         """Update the current charge power limit."""
         raw_value = self.watts_to_api_value(int(value))
-        await self.coordinator.client.execute(
-            set_battery_charge_limit(raw_value), COMMAND_TIMEOUT, COMMAND_RETRIES
-        )
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.execute(set_battery_charge_limit(raw_value))
 
 
 class InverterBatteryDischargeLimitNumber(InverterBatteryPowerLimitNumber):
@@ -289,7 +271,4 @@ class InverterBatteryDischargeLimitNumber(InverterBatteryPowerLimitNumber):
     async def async_set_native_value(self, value: float) -> None:
         """Update the current discharge power limit."""
         raw_value = self.watts_to_api_value(int(value))
-        await self.coordinator.client.execute(
-            set_battery_discharge_limit(raw_value), COMMAND_TIMEOUT, COMMAND_RETRIES
-        )
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.execute(set_battery_discharge_limit(raw_value))
