@@ -62,11 +62,11 @@ class InverterChargeSwitch(InverterEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable AC charging, subject to charge slot configuration."""
-        self.coordinator.execute(set_enable_charge(True))
+        await self.coordinator.execute(set_enable_charge(True))
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Disable AC charging, subject to charge slot configuration."""
-        self.coordinator.execute(set_enable_charge(False))
+        await self.coordinator.execute(set_enable_charge(False))
 
 
 class InverterDischargeSwitch(InverterEntity, SwitchEntity):
@@ -96,11 +96,11 @@ class InverterDischargeSwitch(InverterEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable DC charging, subject to mode and discharge slot configuration."""
-        self.coordinator.execute(set_enable_discharge(True))
+        await self.coordinator.execute(set_enable_discharge(True))
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Disable DC discharging, subject to mode and discharge slot configuration."""
-        self.coordinator.execute(set_enable_discharge(False))
+        await self.coordinator.execute(set_enable_discharge(False))
 
 
 class InverterEcoModeSwitch(InverterEntity, SwitchEntity):
@@ -130,8 +130,8 @@ class InverterEcoModeSwitch(InverterEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable Eco/Dynamic mode."""
-        self.coordinator.execute(set_discharge_mode_to_match_demand())
+        await self.coordinator.execute(set_discharge_mode_to_match_demand())
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Disable Eco/Dynamic mode."""
-        self.coordinator.execute(set_discharge_mode_max_power())
+        await self.coordinator.execute(set_discharge_mode_max_power())
