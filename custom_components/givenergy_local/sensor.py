@@ -14,12 +14,12 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    ELECTRIC_POTENTIAL_VOLT,
-    ENERGY_KILO_WATT_HOUR,
-    FREQUENCY_HERTZ,
     PERCENTAGE,
-    POWER_WATT,
-    TEMP_CELSIUS,
+    UnitOfElectricPotential,
+    UnitOfEnergy,
+    UnitOfFrequency,
+    UnitOfPower,
+    UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -36,7 +36,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.PV,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
     ),
     SensorEntityDescription(
         key="p_pv1",
@@ -44,7 +44,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.PV,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=POWER_WATT,
+        native_unit_of_measurement=UnitOfPower.WATT,
     ),
     SensorEntityDescription(
         key="p_pv2",
@@ -52,7 +52,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.PV,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=POWER_WATT,
+        native_unit_of_measurement=UnitOfPower.WATT,
     ),
     SensorEntityDescription(
         key="e_grid_in_day",
@@ -60,7 +60,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.GRID_IMPORT,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
     ),
     SensorEntityDescription(
         key="e_grid_in_total",
@@ -68,7 +68,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.GRID_IMPORT,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
     ),
     SensorEntityDescription(
         key="e_grid_out_day",
@@ -76,7 +76,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.GRID_EXPORT,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
     ),
     SensorEntityDescription(
         key="e_grid_out_total",
@@ -84,7 +84,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.GRID_EXPORT,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
     ),
     SensorEntityDescription(
         key="e_inverter_out_day",
@@ -92,7 +92,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.INVERTER,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
     ),
     SensorEntityDescription(
         key="e_inverter_out_total",
@@ -100,7 +100,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.INVERTER,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
     ),
     SensorEntityDescription(
         key="p_inverter_out",
@@ -108,7 +108,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.INVERTER,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=POWER_WATT,
+        native_unit_of_measurement=UnitOfPower.WATT,
     ),
     SensorEntityDescription(
         key="e_battery_charge_day",
@@ -116,7 +116,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.BATTERY_PLUS,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
     ),
     SensorEntityDescription(
         key="e_battery_discharge_day",
@@ -124,7 +124,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.BATTERY_MINUS,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
     ),
     SensorEntityDescription(
         key="e_battery_throughput_total",
@@ -132,7 +132,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.BATTERY,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
     ),
     SensorEntityDescription(
         key="p_load_demand",
@@ -140,7 +140,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.AC,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=POWER_WATT,
+        native_unit_of_measurement=UnitOfPower.WATT,
     ),
     SensorEntityDescription(
         key="p_grid_out",
@@ -148,7 +148,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.GRID_EXPORT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=POWER_WATT,
+        native_unit_of_measurement=UnitOfPower.WATT,
     ),
     SensorEntityDescription(
         key="v_battery",
@@ -156,7 +156,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.BATTERY,
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SensorEntityDescription(
         key="p_battery",
@@ -164,7 +164,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.BATTERY,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=POWER_WATT,
+        native_unit_of_measurement=UnitOfPower.WATT,
     ),
     SensorEntityDescription(
         key="p_eps_backup",
@@ -172,7 +172,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.EPS,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=POWER_WATT,
+        native_unit_of_measurement=UnitOfPower.WATT,
     ),
     SensorEntityDescription(
         key="battery_percent",
@@ -185,7 +185,7 @@ _BASIC_INVERTER_SENSORS = [
         name="Battery Temperature",
         icon=Icon.BATTERY_TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=TEMP_CELSIUS,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     ),
     SensorEntityDescription(
         key="v_ac1",
@@ -193,7 +193,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.AC,
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SensorEntityDescription(
         key="f_ac1",
@@ -201,7 +201,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.AC,
         device_class=SensorDeviceClass.FREQUENCY,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=FREQUENCY_HERTZ,
+        native_unit_of_measurement=UnitOfFrequency.HERTZ,
     ),
     SensorEntityDescription(
         key="temp_inverter_heatsink",
@@ -209,7 +209,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.TEMPERATURE,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=TEMP_CELSIUS,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     ),
     SensorEntityDescription(
         key="temp_charger",
@@ -217,7 +217,7 @@ _BASIC_INVERTER_SENSORS = [
         icon=Icon.TEMPERATURE,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=TEMP_CELSIUS,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     ),
 ]
 
@@ -227,7 +227,7 @@ _PV_ENERGY_TODAY_SENSOR = SensorEntityDescription(
     icon=Icon.PV,
     device_class=SensorDeviceClass.ENERGY,
     state_class=SensorStateClass.TOTAL_INCREASING,
-    native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+    native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
 )
 
 _PV_POWER_SENSOR = SensorEntityDescription(
@@ -236,7 +236,7 @@ _PV_POWER_SENSOR = SensorEntityDescription(
     icon=Icon.PV,
     device_class=SensorDeviceClass.POWER,
     state_class=SensorStateClass.MEASUREMENT,
-    native_unit_of_measurement=POWER_WATT,
+    native_unit_of_measurement=UnitOfPower.WATT,
 )
 
 _CONSUMPTION_TODAY_SENSOR = SensorEntityDescription(
@@ -245,7 +245,7 @@ _CONSUMPTION_TODAY_SENSOR = SensorEntityDescription(
     icon=Icon.AC,
     device_class=SensorDeviceClass.ENERGY,
     state_class=SensorStateClass.TOTAL_INCREASING,
-    native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+    native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
 )
 
 _CONSUMPTION_TOTAL_SENSOR = SensorEntityDescription(
@@ -254,7 +254,7 @@ _CONSUMPTION_TOTAL_SENSOR = SensorEntityDescription(
     icon=Icon.AC,
     device_class=SensorDeviceClass.ENERGY,
     state_class=SensorStateClass.TOTAL_INCREASING,
-    native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+    native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
 )
 
 _BATTERY_MODE_SENSOR = SensorEntityDescription(
@@ -282,7 +282,7 @@ _BASIC_BATTERY_SENSORS = [
         name="Battery Output Voltage",
         icon=Icon.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
 ]
 
@@ -292,7 +292,7 @@ _BATTERY_REMAINING_CAPACITY_SENSOR = SensorEntityDescription(
     icon=Icon.BATTERY,
     device_class=SensorDeviceClass.ENERGY,
     state_class=SensorStateClass.TOTAL,
-    native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+    native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
 )
 
 _BATTERY_CELLS_VOLTAGE_SENSOR = SensorEntityDescription(
@@ -300,7 +300,7 @@ _BATTERY_CELLS_VOLTAGE_SENSOR = SensorEntityDescription(
     name="Battery Cells Voltage",
     icon=Icon.BATTERY,
     state_class=SensorStateClass.MEASUREMENT,
-    native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
+    native_unit_of_measurement=UnitOfElectricPotential.VOLT,
 )
 
 
