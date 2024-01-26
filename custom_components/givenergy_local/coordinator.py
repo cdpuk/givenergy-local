@@ -57,7 +57,7 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                     self.require_full_refresh,
                 )
                 plant = await self.client.refresh_plant(
-                    full_refresh=self.require_full_refresh
+                    full_refresh=self.require_full_refresh, retries=2
                 )
         except Exception as err:
             raise UpdateFailed(f"Error communicating with inverter: {err}") from err
