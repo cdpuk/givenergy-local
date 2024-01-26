@@ -18,10 +18,6 @@ _COMMAND_TIMEOUT = 3.0
 _COMMAND_RETRIES = 3
 
 
-class GivEnergyException(Exception):
-    """An error encountered when fetching data from the inverter."""
-
-
 class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
     """Update coordinator that fetches data from a GivEnergy inverter."""
 
@@ -65,6 +61,23 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                 )
         except Exception as err:
             raise UpdateFailed(f"Error communicating with inverter: {err}") from err
+
+        # The connection sometimes returns what it claims is valid data, but many of the values
+        # are zero. This is particularly painful when values are used in the energy dashboard,
+        # as the dashboard double counts everything up to the point in the day when the figures
+        # go back to normal. Work around this by detecting some extremely unlikely zero values.
+        inverter_data = plant.inverter
+
+        # The heatsink and charger temperatures never seem to go below around 10 celsius, even
+        # when idle and temperatures well below zero for an outdoor installation.
+        heatsink_temp = inverter_data.temp_inverter_heatsink
+        charger_temp = inverter_data.temp_charger
+        if heatsink_temp == 0 or charger_temp == 0:
+            raise UpdateFailed("Data discarded: improbable zero temperature")
+
+        # Total inverter output would only ever be zero prior to commissioning.
+        if inverter_data.e_inverter_out_total <= 0:
+            raise UpdateFailed("Data discarded: inverter total output <= 0")
 
         if self.require_full_refresh:
             self.require_full_refresh = False
