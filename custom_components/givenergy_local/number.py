@@ -7,7 +7,7 @@ from homeassistant.components.number import (
     NumberEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, POWER_WATT
+from homeassistant.const import PERCENTAGE, UnitOfPower
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
@@ -237,7 +237,7 @@ class InverterBatteryChargeLimitNumber(InverterBatteryPowerLimitNumber):
                 name="Battery Charge Power Limit",
                 icon=Icon.BATTERY_PLUS,
                 device_class=NumberDeviceClass.POWER,
-                native_unit_of_measurement=POWER_WATT,
+                native_unit_of_measurement=UnitOfPower.WATT,
             ),
         )
 
@@ -264,7 +264,7 @@ class InverterBatteryDischargeLimitNumber(InverterBatteryPowerLimitNumber):
                 name="Battery Discharge Power Limit",
                 icon=Icon.BATTERY_PLUS,
                 device_class=NumberDeviceClass.POWER,
-                native_unit_of_measurement=POWER_WATT,
+                native_unit_of_measurement=UnitOfPower.WATT,
             ),
         )
 
