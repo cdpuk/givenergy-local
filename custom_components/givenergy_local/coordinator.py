@@ -27,7 +27,7 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
             hass,
             _LOGGER,
             name="Inverter",
-            update_interval=timedelta(seconds=30),
+            update_interval=timedelta(seconds=10),
         )
 
         self.host = host
@@ -60,6 +60,8 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                     full_refresh=self.require_full_refresh, retries=2
                 )
         except Exception as err:
+            _LOGGER.error("Disconnecting from inverter due to unexpected refresh error")
+            await self.client.close()
             raise UpdateFailed(f"Error communicating with inverter: {err}") from err
 
         # The connection sometimes returns what it claims is valid data, but many of the values

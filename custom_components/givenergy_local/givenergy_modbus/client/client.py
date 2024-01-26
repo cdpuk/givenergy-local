@@ -73,7 +73,7 @@ class Client:
         )
         # asyncio.create_task(self._task_dump_queues_to_files(), name='dump_queues_to_files'),
         self.connected = True
-        _logger.info(f"Connection established to {self.host}:{self.port}")
+        _logger.info(f"Connection established to %s:%d", self.host, self.port)
 
     async def close(self) -> None:
         """Disconnect from the remote host and clean up tasks and queues."""
@@ -156,10 +156,11 @@ class Client:
             frame = await self.reader.read(300)
             # await self.debug_frames['all'].put(frame)
             async for message in self.framer.decode(frame):
-                _logger.debug(f"Processing {message}")
+                _logger.debug("Processing %s", message)
                 if isinstance(message, ExceptionBase):
                     _logger.warning(
-                        f"Expected response never arrived but resulted in exception: {message}"
+                        "Expected response never arrived but resulted in exception: %s",
+                        message,
                     )
                     continue
                 if isinstance(message, HeartbeatRequest):
@@ -170,16 +171,16 @@ class Client:
                     continue
                 if not isinstance(message, TransparentResponse):
                     _logger.warning(
-                        f"Received unexpected message type for a client: {message}"
+                        "Received unexpected message type for a client: %s", message
                     )
                     continue
                 if isinstance(message, WriteHoldingRegisterResponse):
                     if message.error:
-                        _logger.warning(f"{message}")
+                        _logger.warning("%s", message)
                     else:
-                        _logger.info(f"{message}")
+                        _logger.info("%s", message)
 
-                future = self.expected_responses.get(message.shape_hash(), None)
+                future = self.expected_responses.get(message.shape_hash())
 
                 if future and not future.done():
                     future.set_result(message)
@@ -188,7 +189,10 @@ class Client:
                 # except RegisterCacheUpdateFailed as e:
                 #     # await self.debug_frames['error'].put(frame)
                 #     _logger.debug(f'Ignoring {message}: {e}')
-        _logger.critical("network_consumer reader at EOF, cannot continue")
+        _logger.error(
+            "network_consumer reader at EOF, cannot continue, closing connection"
+        )
+        await self.close()
 
     async def _task_network_producer(self, tx_message_wait: float = 0.25):
         """Producer loop to transmit queued frames with an appropriate delay."""
@@ -200,7 +204,10 @@ class Client:
             if future:
                 future.set_result(True)
             await asyncio.sleep(tx_message_wait)
-        _logger.critical("network_producer writer is closing, cannot continue")
+        _logger.error(
+            "network_producer writer is closing, cannot continue, closing connection"
+        )
+        await self.close()
 
     # async def _task_dump_queues_to_files(self):
     #     """Task to periodically dump debug message frames to disk for debugging."""
@@ -238,26 +245,26 @@ class Client:
         self, request: TransparentRequest, timeout: float, retries: int
     ) -> TransparentResponse:
         """Send a request to the remote, await and return the response."""
+        raw_frame = request.encode()
+
         # mark the expected response
         expected_response = request.expected_response()
         expected_shape_hash = expected_response.shape_hash()
-        existing_response_future = self.expected_responses.get(
-            expected_shape_hash, None
-        )
-        if existing_response_future and not existing_response_future.done():
-            _logger.debug(
-                "Cancelling existing in-flight request and replacing: %s", request
-            )
-            existing_response_future.cancel()
-        response_future: Future[
-            TransparentResponse
-        ] = asyncio.get_event_loop().create_future()
-        self.expected_responses[expected_shape_hash] = response_future
-
-        raw_frame = request.encode()
 
         tries = 0
         while tries <= retries:
+            tries += 1
+            existing_response_future = self.expected_responses.get(expected_shape_hash)
+            if existing_response_future and not existing_response_future.done():
+                _logger.debug(
+                    "Cancelling existing in-flight request and replacing: %s", request
+                )
+                existing_response_future.cancel()
+            response_future: Future[
+                TransparentResponse
+            ] = asyncio.get_event_loop().create_future()
+            self.expected_responses[expected_shape_hash] = response_future
+
             frame_sent = asyncio.get_event_loop().create_future()
             await self.tx_queue.put((raw_frame, frame_sent))
             await asyncio.wait_for(
@@ -268,8 +275,8 @@ class Client:
                 await asyncio.wait_for(response_future, timeout=timeout)
                 if response_future.done():
                     response = response_future.result()
-                    if tries > 0:
-                        _logger.debug("Received %s after %d tries", response, tries)
+                    if tries > 1:
+                        _logger.debug("Received %s after %d attempts", response, tries)
                     if response.error:
                         _logger.error("Received error response, retrying: %s", response)
                     else:
@@ -277,14 +284,14 @@ class Client:
             except asyncio.TimeoutError:
                 pass
 
-            tries += 1
-            _logger.debug(
-                "Timeout awaiting %s (future: %s), attempting retry %d of %d",
-                expected_response,
-                response_future,
-                tries,
-                retries,
-            )
+            if tries <= retries:
+                _logger.debug(
+                    "Timeout awaiting %s (future: %s), attempting retry %d of %d",
+                    expected_response,
+                    response_future,
+                    tries,
+                    retries,
+                )
 
         _logger.warning(
             "Timeout awaiting %s after %d tries at %ds, giving up",
