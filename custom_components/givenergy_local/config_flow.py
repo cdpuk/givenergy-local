@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from typing import Any
 
-import async_timeout
 from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResult
 import voluptuous as vol
@@ -18,7 +19,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
 async def read_inverter_serial(data: dict[str, Any]) -> str:
     """Validate user input by reading the inverter serial number."""
     client = Client(data[CONF_HOST], 8899)
-    async with async_timeout.timeout(10):
+    async with asyncio.timeout(10):
         await client.connect()
         await client.refresh_plant()
         await client.close()

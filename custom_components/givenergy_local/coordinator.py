@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from logging import getLogger
 
-import async_timeout
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -101,7 +101,7 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         attempt = 1
         while attempt <= _REFRESH_ATTEMPTS:
             try:
-                async with async_timeout.timeout(10):
+                async with asyncio.timeout(10):
                     _LOGGER.info(
                         "Fetching data from %s (attempt=%d/%d, full_refresh=%s)",
                         self.host,
