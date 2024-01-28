@@ -10,30 +10,32 @@ Issues not containing the minimum requirements will be closed:
 
 - Issues without a description (using the header is not good enough) will be closed.
 - Issues without debug logging will be closed.
-- Issues without configuration will be closed
 
 -->
 
-## Version of the custom_component
-<!-- If you are not using the newest version, download and try that before opening an issue
-If you are unsure about the version check the const.py file.
+## Hardware and versions
+<!-- If you are not using the newest version, download and try that before opening an issue.
+Check the version you're running under the HACS UI.
+Inverter and battery firmware versions can be found via the HA Devices page, or via the GivEnergy portal.
 -->
 
-## Configuration
-
-```yaml
-
-Add your logs here.
-
-```
+* Inverter model & generation:
+* Inverter firmware version:
+* Battery firmware version:
+* Home Assistant integration version:
 
 ## Describe the bug
-A clear and concise description of what the bug is.
 
+A clear and concise description of what the bug is.
 
 ## Debug log
 
-<!-- To enable debug logs check this https://www.home-assistant.io/components/logger/ -->
+<!--
+There are two ways to capture debug logs:
+
+1. Via the UI, see https://www.home-assistant.io/docs/configuration/troubleshooting/#enabling-debug-logging
+2. Via the configuration file, see https://www.home-assistant.io/components/logger/
+-->
 
 ```text
 
