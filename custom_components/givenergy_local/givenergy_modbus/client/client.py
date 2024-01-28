@@ -73,10 +73,15 @@ class Client:
         )
         # asyncio.create_task(self._task_dump_queues_to_files(), name='dump_queues_to_files'),
         self.connected = True
-        _logger.info(f"Connection established to %s:%d", self.host, self.port)
+        _logger.info("Connection established to %s:%d", self.host, self.port)
 
     async def close(self) -> None:
         """Disconnect from the remote host and clean up tasks and queues."""
+        if not self.connected:
+            return
+
+        _logger.debug("Disconnecting and cleaning up")
+
         self.connected = False
 
         if self.tx_queue:
@@ -189,7 +194,7 @@ class Client:
                 # except RegisterCacheUpdateFailed as e:
                 #     # await self.debug_frames['error'].put(frame)
                 #     _logger.debug(f'Ignoring {message}: {e}')
-        _logger.error(
+        _logger.debug(
             "network_consumer reader at EOF, cannot continue, closing connection"
         )
         await self.close()
@@ -204,7 +209,7 @@ class Client:
             if future:
                 future.set_result(True)
             await asyncio.sleep(tx_message_wait)
-        _logger.error(
+        _logger.debug(
             "network_producer writer is closing, cannot continue, closing connection"
         )
         await self.close()
@@ -271,6 +276,8 @@ class Client:
                 frame_sent, timeout=self.tx_queue.qsize() + 1
             )  # this should only happen if the producer task is stuck
 
+            _logger.debug("Request sent (attempt %d): %s", tries, request)
+
             try:
                 await asyncio.wait_for(response_future, timeout=timeout)
                 if response_future.done():
@@ -286,9 +293,8 @@ class Client:
 
             if tries <= retries:
                 _logger.debug(
-                    "Timeout awaiting %s (future: %s), attempting retry %d of %d",
+                    "Timeout awaiting %s, attempting retry %d of %d",
                     expected_response,
-                    response_future,
                     tries,
                     retries,
                 )
