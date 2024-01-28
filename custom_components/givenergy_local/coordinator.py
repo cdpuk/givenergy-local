@@ -150,11 +150,11 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
             too_low = False
             too_high = False
 
-            if min_val := check.min:
+            if (min_val := check.min) is not None:
                 too_low = not (
                     value > min_val or (check.min_inclusive and value >= min_val)
                 )
-            if max_val := check.max:
+            if (max_val := check.max) is not None:
                 too_high = not (
                     value < max_val or (check.max_inclusive and value <= max_val)
                 )
