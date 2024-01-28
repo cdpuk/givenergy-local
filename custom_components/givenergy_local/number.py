@@ -1,4 +1,5 @@
 """Home Assistant number entity descriptions."""
+
 from __future__ import annotations
 
 from homeassistant.components.number import (

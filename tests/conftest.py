@@ -1,4 +1,5 @@
 """Global fixtures for givenergy_local integration."""
+
 from datetime import time
 from unittest.mock import MagicMock, patch
 

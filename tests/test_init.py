@@ -1,4 +1,5 @@
 """Test givenergy_local setup process."""
+
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 import pytest

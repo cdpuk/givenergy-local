@@ -1,4 +1,5 @@
 """The GivEnergy update coordinator."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

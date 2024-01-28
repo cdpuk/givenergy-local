@@ -99,7 +99,7 @@ The battery will charge from the grid during the defined time period, up to the 
 
 Activating this mode is equivalent to configuring the following individual options:
 * Set `switch.battery_ac_charging` to `on`.
-* Set `numnber.battery_ac_charge_limit`.
+* Set `number.battery_ac_charge_limit`.
 * Set the first battery charge slot.
 
 Ways to turn this off include:
@@ -110,12 +110,3 @@ Ways to turn this off include:
 ### Disable timed charging
 
 This simply sets `switch.battery_ac_charging` to `off`. It may be removed in a future version.
-
-### Set charge power limit
-
-**Deprecated:** use the `number.battery_charge_power` entity instead (see [battery power limits](#battery-power-limits)). Sets the maximum battery charging rate.  This only works for Gen1 inverters and will be removed in a future version.
-
-### Set discharge power limit
-
-**Deprecated:** use the `number.battery_discharge_power` entity instead (see [battery power limits](#battery-power-limits)). Sets the maximum battery charging rate.  This only works for Gen1 inverters and will be removed in a future version.
-

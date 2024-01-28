@@ -1,4 +1,5 @@
 """GivEnergy services."""
+
 import datetime
 
 from typing import Any
@@ -28,7 +29,7 @@ _ATTR_START_TIME = "start_time"
 _ATTR_END_TIME = "end_time"
 _ATTR_CHARGE_TARGET = "charge_target"
 
-# Shared shema that typically defines a charging/discharging slot.
+# Shared schema that typically defines a charging/discharging slot.
 _TIME_SPAN_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_DEVICE_ID): str,
