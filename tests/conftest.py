@@ -31,7 +31,9 @@ def skip_notifications_fixture():
 @pytest.fixture(name="bypass_get_data")
 def bypass_get_data_fixture():
     """Skip calls to get data from API."""
-    with patch("givenergy_modbus.client.GivEnergyClient.refresh_plant"):
+    with patch(
+        "custom_components.givenergy_local.givenergy_modbus.client.client.Client.refresh_plant"
+    ):
         yield
 
 
@@ -40,7 +42,7 @@ def bypass_get_data_fixture():
 def error_get_data_fixture():
     """Simulate error when retrieving data from API."""
     with patch(
-        "givenergy_modbus.client.GivEnergyClient.refresh_plant",
+        "custom_components.givenergy_local.givenergy_modbus.client.client.Client.refresh_plant",
         side_effect=Exception,
     ):
         yield
