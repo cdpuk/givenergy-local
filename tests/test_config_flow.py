@@ -1,4 +1,5 @@
 """Test givenergy_local config flow."""
+
 from unittest.mock import patch
 
 from homeassistant import config_entries, data_entry_flow

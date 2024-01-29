@@ -1,11 +1,12 @@
 """Home Assistant sensor descriptions."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 
 from typing import Any
 
-from givenergy_modbus.model.inverter import Model
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -25,9 +26,18 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
-from .const import DOMAIN, LOGGER, Icon
+from .const import DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import BatteryEntity, InverterEntity
+from .givenergy_modbus.model.inverter import Model
+
+
+@dataclass
+class MappedSensorEntityDescription(SensorEntityDescription):
+    """Sensor description providing a lookup key to obtain the value."""
+
+    ge_modbus_key: str | None = None
+
 
 _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
@@ -264,43 +274,48 @@ _BATTERY_MODE_SENSOR = SensorEntityDescription(
 )
 
 _BASIC_BATTERY_SENSORS = [
-    SensorEntityDescription(
+    MappedSensorEntityDescription(
         key="battery_soc",
         name="Battery Charge",
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
+        ge_modbus_key="soc",
     ),
-    SensorEntityDescription(
+    MappedSensorEntityDescription(
         key="battery_num_cycles",
         name="Battery Cycles",
         icon=Icon.BATTERY_CYCLES,
         state_class=SensorStateClass.TOTAL_INCREASING,
+        ge_modbus_key="num_cycles",
     ),
-    SensorEntityDescription(
+    MappedSensorEntityDescription(
         key="v_battery_out",
         name="Battery Output Voltage",
         icon=Icon.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        ge_modbus_key="v_out",
     ),
 ]
 
-_BATTERY_REMAINING_CAPACITY_SENSOR = SensorEntityDescription(
+_BATTERY_REMAINING_CAPACITY_SENSOR = MappedSensorEntityDescription(
     key="battery_remaining_capacity",
     name="Battery Remaining Capacity",
     icon=Icon.BATTERY,
     device_class=SensorDeviceClass.ENERGY,
     state_class=SensorStateClass.TOTAL,
     native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+    ge_modbus_key="cap_remaining",
 )
 
-_BATTERY_CELLS_VOLTAGE_SENSOR = SensorEntityDescription(
+_BATTERY_CELLS_VOLTAGE_SENSOR = MappedSensorEntityDescription(
     key="v_battery_cells_sum",
     name="Battery Cells Voltage",
     icon=Icon.BATTERY,
     state_class=SensorStateClass.MEASUREMENT,
     native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+    ge_modbus_key="v_cells_sum",
 )
 
 
@@ -345,37 +360,32 @@ async def async_setup_entry(
     )
 
     # Add battery sensors
-    for batt_num, batt in enumerate(coordinator.data.batteries):
-        # Only add data for batteries if we can successfully read the serial number
-        # Failure to read a S/N can result in null bytes
-        if batt.battery_serial_number.replace("\x00", ""):
-            entities.extend(
-                [
-                    BatteryBasicSensor(
-                        coordinator, config_entry, entity_description, batt_num
-                    )
-                    for entity_description in _BASIC_BATTERY_SENSORS
-                ]
-            )
+    for batt_num in range(len(coordinator.data.batteries)):
+        entities.extend(
+            [
+                BatteryBasicSensor(
+                    coordinator, config_entry, entity_description, batt_num
+                )
+                for entity_description in _BASIC_BATTERY_SENSORS
+            ]
+        )
 
-            entities.extend(
-                [
-                    BatteryRemainingCapacitySensor(
-                        coordinator,
-                        config_entry,
-                        entity_description=_BATTERY_REMAINING_CAPACITY_SENSOR,
-                        battery_id=batt_num,
-                    ),
-                    BatteryCellsVoltageSensor(
-                        coordinator,
-                        config_entry,
-                        entity_description=_BATTERY_CELLS_VOLTAGE_SENSOR,
-                        battery_id=batt_num,
-                    ),
-                ]
-            )
-        else:
-            LOGGER.warning("Ignoring battery %d due to missing serial number", batt_num)
+        entities.extend(
+            [
+                BatteryRemainingCapacitySensor(
+                    coordinator,
+                    config_entry,
+                    entity_description=_BATTERY_REMAINING_CAPACITY_SENSOR,
+                    battery_id=batt_num,
+                ),
+                BatteryCellsVoltageSensor(
+                    coordinator,
+                    config_entry,
+                    entity_description=_BATTERY_CELLS_VOLTAGE_SENSOR,
+                    battery_id=batt_num,
+                ),
+            ]
+        )
 
     async_add_entities(entities)
 
@@ -391,9 +401,7 @@ class InverterBasicSensor(InverterEntity, SensorEntity):
     ) -> None:
         """Initialize a sensor based on an entity description."""
         super().__init__(coordinator, config_entry)
-        self._attr_unique_id = (
-            f"{self.data.inverter_serial_number}_{entity_description.key}"
-        )
+        self._attr_unique_id = f"{self.data.serial_number}_{entity_description.key}"
         self.entity_description = entity_description
 
     @property
@@ -436,7 +444,7 @@ class ConsumptionTodaySensor(InverterBasicSensor):
 
         # For AC inverters, PV output doesn't count as part of the inverter output,
         # so we need to add it on.
-        if self.data.inverter_model == Model.AC:
+        if self.data.model == Model.AC:
             consumption_today += self.data.e_pv1_day + self.data.e_pv2_day
 
         return consumption_today
@@ -457,7 +465,7 @@ class ConsumptionTotalSensor(InverterBasicSensor):
 
         # For AC inverters, PV output doesn't count as part of the inverter output,
         # so we need to add it on.
-        if self.data.inverter_model == Model.AC:
+        if self.data.model == Model.AC:
             consumption_total += self.data.e_pv_total
 
         return consumption_total
@@ -495,24 +503,24 @@ class BatteryBasicSensor(BatteryEntity, SensorEntity):
     values as reported by the inverter itself and the BMS.
     """
 
+    entity_description: MappedSensorEntityDescription
+
     def __init__(
         self,
         coordinator: GivEnergyUpdateCoordinator,
         config_entry: ConfigEntry,
-        entity_description: SensorEntityDescription,
+        entity_description: MappedSensorEntityDescription,
         battery_id: int,
     ) -> None:
         """Initialize a sensor based on an entity description."""
         super().__init__(coordinator, config_entry, battery_id)
-        self._attr_unique_id = (
-            f"{self.data.battery_serial_number}_{entity_description.key}"
-        )
+        self._attr_unique_id = f"{self.data.serial_number}_{entity_description.key}"
         self.entity_description = entity_description
 
     @property
     def native_value(self) -> StateType:
         """Get the register value whose name matches the entity key."""
-        return self.data.dict().get(self.entity_description.key)
+        return self.data.dict().get(self.entity_description.ge_modbus_key)
 
 
 class BatteryRemainingCapacitySensor(BatteryBasicSensor):
@@ -522,7 +530,7 @@ class BatteryRemainingCapacitySensor(BatteryBasicSensor):
     def native_value(self) -> StateType:
         """Map the low-level Ah value to energy in kWh."""
         battery_remaining_capacity = (
-            self.data.battery_remaining_capacity * self.data.v_battery_cells_sum / 1000
+            self.data.cap_remaining * self.data.v_cells_sum / 1000
         )
         # Raw value is in Ah (Amp Hour)
         # Convert to KWh using formula Ah * V / 1000
@@ -535,7 +543,7 @@ class BatteryCellsVoltageSensor(BatteryBasicSensor):
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
         """Expose individual cell voltages."""
-        num_cells = self.data.battery_num_cells
+        num_cells = self.data.num_cells
         return self.data.dict(  # type: ignore[no-any-return]
-            include={f"v_battery_cell_{i:02d}" for i in range(1, num_cells + 1)}
+            include={f"v_cell_{i:02d}" for i in range(1, num_cells + 1)}
         )

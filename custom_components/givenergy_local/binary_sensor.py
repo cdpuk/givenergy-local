@@ -1,4 +1,5 @@
 """Binary sensor platform."""
+
 from __future__ import annotations
 
 from datetime import datetime, time, timedelta
@@ -18,6 +19,7 @@ from homeassistant.util import dt
 from .const import DOMAIN, LOGGER, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import InverterEntity
+from .givenergy_modbus.model import TimeSlot
 
 _CHARGE_SLOT_BINARY_SENSORS = [
     BinarySensorEntityDescription(
@@ -72,9 +74,7 @@ class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
     ) -> None:
         """Initialize a sensor based on an entity description."""
         super().__init__(coordinator, config_entry)
-        self._attr_unique_id = (
-            f"{self.data.inverter_serial_number}_{entity_description.key}"
-        )
+        self._attr_unique_id = f"{self.data.serial_number}_{entity_description.key}"
         self.entity_description = entity_description
 
     async def async_added_to_hass(self) -> None:
@@ -110,8 +110,8 @@ class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
 
         # Get slot details
         current_time = now.time()
-        start = self.slot[0]
-        end = self.slot[1]
+        start = self.slot.start
+        end = self.slot.end
 
         # We don't need to be notified about entering/leaving an undefined slot
         if start == end:
@@ -146,20 +146,22 @@ class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
         self.async_write_ha_state()
 
     @property
-    def slot(self) -> tuple[time, time]:
+    def slot(self) -> TimeSlot:
         """Get the slot definition."""
-        return self.data.dict().get(self.entity_description.key)  # type: ignore
+        slot: TimeSlot = self.data.dict().get(self.entity_description.key)
+        return slot
 
     @property
     def is_on(self) -> bool | None:
         """Determine whether we're currently within the slot."""
         now: time = dt.now().time()
-        return self.slot[0] <= now < self.slot[1]
+        is_on: bool = self.slot.start <= now < self.slot.end
+        return is_on
 
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
         """Attach charge slot configuration."""
         return {
-            "start": self.slot[0].strftime("%H:%M"),
-            "end": self.slot[1].strftime("%H:%M"),
+            "start": self.slot.start.strftime("%H:%M"),
+            "end": self.slot.end.strftime("%H:%M"),
         }

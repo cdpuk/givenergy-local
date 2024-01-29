@@ -1,4 +1,5 @@
 """Global fixtures for givenergy_local integration."""
+
 from datetime import time
 from unittest.mock import MagicMock, patch
 
@@ -31,7 +32,9 @@ def skip_notifications_fixture():
 @pytest.fixture(name="bypass_get_data")
 def bypass_get_data_fixture():
     """Skip calls to get data from API."""
-    with patch("givenergy_modbus.client.GivEnergyClient.refresh_plant"):
+    with patch(
+        "custom_components.givenergy_local.givenergy_modbus.client.client.Client.refresh_plant"
+    ):
         yield
 
 
@@ -40,7 +43,7 @@ def bypass_get_data_fixture():
 def error_get_data_fixture():
     """Simulate error when retrieving data from API."""
     with patch(
-        "givenergy_modbus.client.GivEnergyClient.refresh_plant",
+        "custom_components.givenergy_local.givenergy_modbus.client.client.Client.refresh_plant",
         side_effect=Exception,
     ):
         yield
@@ -51,8 +54,8 @@ def mock_plant_fixture():
     """Mock enough inverter and battery data to allow platform setup to succeed."""
     with patch("custom_components.givenergy_local.coordinator.Plant") as mock_ge_plant:
         inverter = MagicMock()
-        inverter.inverter_serial_number = "SD12345678"
-        inverter.inverter_model = "Mock Inverter"
+        inverter.serial_number = "SD12345678"
+        inverter.model = "Mock Inverter"
         inverter.firmware_version = "MOCK"
         inverter.temp_inverter_heatsink = 30
         inverter.temp_battery = 20

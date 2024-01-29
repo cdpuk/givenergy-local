@@ -1,95 +1,177 @@
 """The GivEnergy update coordinator."""
+
 from __future__ import annotations
 
+import asyncio
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from logging import getLogger
 
-import async_timeout
-from givenergy_modbus.client import GivEnergyClient
-from givenergy_modbus.model.plant import Plant
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+from .givenergy_modbus.client.client import Client
+from .givenergy_modbus.model.plant import Plant
+from .givenergy_modbus.pdu.transparent import TransparentRequest
+
 _LOGGER = getLogger(__name__)
 _FULL_REFRESH_INTERVAL = timedelta(minutes=5)
+_REFRESH_ATTEMPTS = 3
+_COMMAND_TIMEOUT = 3.0
+_COMMAND_RETRIES = 3
 
 
-class GivEnergyException(Exception):
-    """An error encountered when fetching data from the inverter."""
+@dataclass
+class QualityCheck:
+    """Defines likely values for a given property."""
+
+    attr_name: str
+    min: float | None
+    max: float | None
+    min_inclusive: bool = True
+    max_inclusive: bool = True
+
+    @property
+    def range_description(self) -> str:
+        """Provide a string representation of the accepted range.
+
+        This uses mathematical notation, where square brackets mean inclusive,
+        and round brackets mean exclusive.
+        """
+        return "%s%s, %s%s" % (  # pylint: disable=consider-using-f-string
+            "[" if self.min_inclusive else "(",
+            self.min,
+            self.max,
+            "]" if self.max_inclusive else ")",
+        )
+
+
+QC = QualityCheck
+_INVERTER_QUALITY_CHECKS = [
+    QC("temp_inverter_heatsink", -10, 100),
+    QC("temp_charger", -10, 100),
+    QC("temp_battery", -10, 100),
+    QC("e_inverter_out_total", 0, 1e6, min_inclusive=False),  # 1GWh
+    QC("e_grid_in_total", 0, 1e6, min_inclusive=False),  # 1GWh
+    QC("e_grid_out_total", 0, 1e6, min_inclusive=False),  # 1GWh
+    QC("battery_percent", 0, 100),
+    QC("p_eps_backup", -15e3, 15e3),  # +/- 15kW
+    QC("p_grid_out", -1e6, 15e3),  # 15kW export, 1MW import
+    QC("p_battery", -15e3, 15e3),  # +/- 15kW
+]
 
 
 class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
-    """Update coordinator that enables efficient batched updates to all entities associated with an inverter."""
+    """Update coordinator that fetches data from a GivEnergy inverter."""
 
-    require_full_refresh = True
-    last_full_refresh = datetime.min
-
-    def __init__(self, hass: HomeAssistant, host: str, num_batteries: int) -> None:
+    def __init__(self, hass: HomeAssistant, host: str) -> None:
         """Initialize my coordinator."""
         super().__init__(
             hass,
             _LOGGER,
             name="Inverter",
-            update_interval=timedelta(seconds=30),
+            update_interval=timedelta(seconds=10),
         )
 
         self.host = host
-        self.plant = Plant(number_batteries=num_batteries)
+        self.client = Client(host, 8899)
+        self.require_full_refresh = True
+        self.last_full_refresh = datetime.min
+
+    async def async_shutdown(self) -> None:
+        """Terminate the modbus connection and shut down the coordinator."""
+        _LOGGER.debug("Shutting down")
+        await self.client.close()
+        await super().async_shutdown()
 
     async def _async_update_data(self) -> Plant:
-        """Fetch data from API endpoint.
+        """Fetch data from the inverter."""
+        if not self.client.connected:
+            await self.client.connect()
+            self.require_full_refresh = True
 
-        This is the place to pre-process the data to lookup tables
-        so entities can quickly look up their data.
-        """
         if self.last_full_refresh < (datetime.utcnow() - _FULL_REFRESH_INTERVAL):
             self.require_full_refresh = True
 
-        try:
-            async with async_timeout.timeout(10):
-                await self.hass.async_add_executor_job(
-                    self._fetch_data, self.require_full_refresh
-                )
-                return self.plant
-        except Exception as err:
-            raise UpdateFailed(f"Error communicating with API: {err}") from err
+        # Allow a few attempts to pull back valid data.
+        # Within the inverter comms, there are further retries to ensure >some< data is returned
+        # to the coordinator, but sometimes we still get bad values. When that data arrives back
+        # here, we perform some quality checks and trigger another attempt if something doesn't
+        # look right. If all that fails, then data will show as 'unavailable' in the UI.
+        attempt = 1
+        while attempt <= _REFRESH_ATTEMPTS:
+            try:
+                async with asyncio.timeout(10):
+                    _LOGGER.info(
+                        "Fetching data from %s (attempt=%d/%d, full_refresh=%s)",
+                        self.host,
+                        attempt,
+                        _REFRESH_ATTEMPTS,
+                        self.require_full_refresh,
+                    )
+                    plant = await self.client.refresh_plant(
+                        full_refresh=self.require_full_refresh, retries=2
+                    )
+            except Exception as err:
+                await self.client.close()
+                raise UpdateFailed(f"Error communicating with inverter: {err}") from err
 
-    def _fetch_data(self, full_refresh: bool) -> None:
-        """Fetch data from the inverter via modbus."""
-        _LOGGER.info("Fetching data from %s", self.host)
-        try:
-            client = GivEnergyClient(self.host)
-            if full_refresh:
-                _LOGGER.debug("Performing full refresh")
-                client.refresh_plant(self.plant, full_refresh=True)
-                self.last_full_refresh = datetime.utcnow()
+            if not self._is_data_valid(plant):
+                attempt += 1
+                continue
+
+            if self.require_full_refresh:
                 self.require_full_refresh = False
-            else:
-                _LOGGER.debug("Performing partial refresh")
-                client.refresh_plant(self.plant, full_refresh=False)
-        finally:
-            # We seem to have better reliability when we avoid reusing the client object
-            # Close the underlying socket to clean up resources
-            client.modbus_client.close()
+                self.last_full_refresh = datetime.utcnow()
+            return plant
 
-        # The connection sometimes returns what it claims is valid data, but many of the values
-        # are zero. This is particularly painful when values are used in the energy dashboard,
-        # as the dashboard double counts everything up to the point in the day when the figures
-        # go back to normal. Work around this by detecting some extremely unlikely zero values.
-        inverter_data = self.plant.inverter
+        raise UpdateFailed(
+            f"Failed to obtain valid data after {_REFRESH_ATTEMPTS} attempts"
+        )
 
-        # The heatsink and charger temperatures never seem to go below around 10 celsius, even
-        # when idle and temperatures well below zero for an outdoor installation.
-        heatsink_temp = inverter_data.temp_inverter_heatsink
-        charger_temp = inverter_data.temp_charger
-        if heatsink_temp == 0 or charger_temp == 0:
-            raise GivEnergyException("Data discarded: improbable zero temperature")
+    @staticmethod
+    def _is_data_valid(plant: Plant) -> bool:
+        """Perform checks to ensure returned data actually makes sense.
 
-        # Total inverter output would only ever be zero prior to commissioning.
-        if inverter_data.e_inverter_out_total <= 0:
-            raise GivEnergyException("Data discarded: inverter total output <= 0")
+        The connection sometimes returns what it claims is valid data, but many of the values
+        are zero (or other highly improbable values). This is particularly painful when values
+        are used in the energy dashboard, as the dashboard double counts everything up to the
+        point in the day when the figures go back to normal.
+        """
+        try:
+            inverter_data = plant.inverter
+            _ = plant.batteries
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.warning("Inverter model failed validation: %s", err)
+            return False
 
-    async def async_request_full_refresh(self) -> None:
-        """Force a full update from the inverter."""
+        for check in _INVERTER_QUALITY_CHECKS:
+            value = inverter_data.dict().get(check.attr_name)
+            too_low = False
+            too_high = False
+
+            if (min_val := check.min) is not None:
+                too_low = not (
+                    value > min_val or (check.min_inclusive and value >= min_val)
+                )
+            if (max_val := check.max) is not None:
+                too_high = not (
+                    value < max_val or (check.max_inclusive and value <= max_val)
+                )
+
+            if too_low or too_high:
+                _LOGGER.warning(
+                    "Data discarded: %s value of %s is out of range %s",
+                    check.attr_name,
+                    value,
+                    check.range_description,
+                )
+                return False
+
+        return True
+
+    async def execute(self, requests: list[TransparentRequest]) -> None:
+        """Execute a set of requests and force an update to read any new values."""
+        self.client.execute(requests, _COMMAND_TIMEOUT, _COMMAND_RETRIES)
         self.require_full_refresh = True
         await self.async_request_refresh()

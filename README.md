@@ -9,10 +9,6 @@ This custom component provides local access to GivEnergy inverters via Modbus. T
 
 While the risk of something going wrong is low, bear in mind the use of this integration is entirely at your own risk.
 
-## Device Support
-
-Modbus support is provided by the [`givenergy-modbus`][givenergy-modbus] library. While this works well for the vast majority of GivEnergy inverters and batteries, inevitably there will be edge cases and new kit that requires updates to either this integration or the underlying library. See the [Limitations](#limitations) section.
-
 ## Installation
 
 This integration is delivered as a HACS custom repository.
@@ -27,7 +23,7 @@ You need to know the hostname or IP address of your inverter, which you can norm
 * Go to **Configuration** > **Devices & Services** > **Add Integration**, then find **GivEnergy Local** in the list.
 * Enter the inverter address when prompted.
 
-If your Home Assistant instance is in a different VLAN or network than inverter, ensure it can reach the inverter via TCP port 8899.
+Your Home Assistant instance must be able to establish a TCP connection to your inverter on port 8899.
 
 ## Documentation
 
@@ -37,13 +33,21 @@ If your Home Assistant instance is in a different VLAN or network than inverter,
 
 ## Limitations
 
-This integration uses the latest public release of the `givenergy_modbus` library. Unfortunately, this hasn't kept pace with GivEnergy product updates, so may be incompatible with communication methods and features found in newer systems.
+GivEnergy are continually releasing new equipment and firmware. There is a risk that new devices won't work, or that firmware updates may suddenly prevent the integration being able to talk to your inverter.
 
-The current `givenergy_modbus` uses a communication method that is known to be slightly unreliable. Your Home Assistant logs are likely to be filled with a gradual stream of errors from the library. However, due to the fairly high update rate, the odd missed update is rarely an issue.
+If this happens, bear in mind the maintainers of this integration do not have access to your equipment, so debugging such issues can be challenging. Raise an issue with as much detail as possible to make it easier to help you.
 
-Other community projects such as GivTCP have chosen to copy & modify the `givenergy_modbus` library to resolve some of these issues, however those modifications have not been released as a standalone project that can easily be reused by this integration.
+## Acknowledgements
 
-Don't be offended if you bug report is closed if it relates to the above limitations.
+### givenergy_modbus
+
+The Modbus protocol implementation for GivEnergy systems was originally created by the [`givenergy-modbus`][givenergy-modbus] project. Huge thanks goes to the author and contributors for unpicking the non-standard low level technical details of the protocol.
+
+Since the project was paused, the current implementation of this integration uses an embedded forked version of the library so that further bugfixes and updates can be made without an external dependency.
+
+### GivTCP
+
+[GivTCP][givtcp] is an alternative to this integration, which runs as a Home Assistant add-on, and therefore may not be suitable for all installations. However, it sees frequent updates and several compatibility updates made to that project have been reused here.
 
 ## Contributing
 
@@ -57,5 +61,6 @@ If you want to contribute to this please read the [Contribution Guidelines](CONT
 [releases-shield]: https://img.shields.io/github/release/cdpuk/givenergy-local.svg?style=for-the-badge
 [releases]: https://github.com/cdpuk/givenergy-local/releases
 [givenergy-modbus]: https://github.com/dewet22/givenergy-modbus
+[givtcp]: https://github.com/britkat1980/giv_tcp
 [hacs-download]: https://hacs.xyz/docs/setup/download
 [hacs-custom]: https://hacs.xyz/docs/faq/custom_repositories

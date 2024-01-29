@@ -1,7 +1,7 @@
 """Home Assistant number entity descriptions."""
+
 from __future__ import annotations
 
-from givenergy_modbus.client import GivEnergyClient
 from homeassistant.components.number import (
     NumberDeviceClass,
     NumberEntity,
@@ -16,7 +16,14 @@ from homeassistant.helpers.typing import StateType
 from .const import BATTERY_NOMINAL_VOLTAGE, DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import InverterEntity
-from .givenergy_ext import async_reliable_call
+from .givenergy_modbus.client.commands import (
+    RegisterMap,
+    set_battery_charge_limit,
+    set_battery_discharge_limit,
+    set_battery_power_reserve,
+    set_battery_soc_reserve,
+)
+from .givenergy_modbus.pdu.write_registers import WriteHoldingRegisterRequest
 
 
 async def async_setup_entry(
@@ -48,9 +55,7 @@ class InverterBasicNumber(InverterEntity, NumberEntity):
     ) -> None:
         """Initialize a sensor based on an entity description."""
         super().__init__(coordinator, config_entry)
-        self._attr_unique_id = (
-            f"{self.data.inverter_serial_number}_{entity_description.key}"
-        )
+        self._attr_unique_id = f"{self.data.serial_number}_{entity_description.key}"
         self.entity_description = entity_description
 
     @property
@@ -93,14 +98,12 @@ class ACChargeLimitNumber(InverterBasicNumber):
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value."""
+        target_soc = int(value)
+        if not 4 <= target_soc <= 100:
+            raise ValueError(f"Charge Target SOC ({target_soc}) must be in [4-100]%")
 
-        def enable_charge_target(client: GivEnergyClient) -> None:
-            client.enable_charge_target(int(value))
-
-        await async_reliable_call(
-            self.hass,
-            self.coordinator,
-            enable_charge_target,
+        await self.coordinator.execute(
+            [WriteHoldingRegisterRequest(RegisterMap.CHARGE_TARGET_SOC, target_soc)]
         )
 
 
@@ -136,15 +139,7 @@ class BatterySoCReserveNumber(InverterBasicNumber):
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value."""
-
-        def set_shallow_charge(client: GivEnergyClient) -> None:
-            client.set_shallow_charge(int(value))
-
-        await async_reliable_call(
-            self.hass,
-            self.coordinator,
-            set_shallow_charge,
-        )
+        await self.coordinator.execute(set_battery_soc_reserve(int(value)))
 
 
 class BatteryMinPowerReserveNumber(InverterBasicNumber):
@@ -173,15 +168,7 @@ class BatteryMinPowerReserveNumber(InverterBasicNumber):
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value."""
-
-        def set_battery_power_reserve(client: GivEnergyClient) -> None:
-            client.set_battery_power_reserve(int(value))
-
-        await async_reliable_call(
-            self.hass,
-            self.coordinator,
-            set_battery_power_reserve,
-        )
+        await self.coordinator.execute(set_battery_power_reserve(int(value)))
 
 
 class InverterBatteryPowerLimitNumber(InverterBasicNumber):
@@ -199,7 +186,7 @@ class InverterBatteryPowerLimitNumber(InverterBasicNumber):
         # We need to calculate the maximum possible value based on inverter and battery
         # capabilities. We know packs are limited to 0.5C charge/discharge, so:
         battery_max_power = int(
-            self.data.battery_nominal_capacity * BATTERY_NOMINAL_VOLTAGE * 0.5
+            self.data.battery_capacity * BATTERY_NOMINAL_VOLTAGE * 0.5
         )
 
         # Work out the maximum possible power
@@ -210,7 +197,7 @@ class InverterBatteryPowerLimitNumber(InverterBasicNumber):
         # To add confusion to the matter, the raw values used by the API need to be determined
         # from the battery capacity
         self.battery_power_step = (
-            self.data.battery_nominal_capacity * BATTERY_NOMINAL_VOLTAGE / 100
+            self.data.battery_capacity * BATTERY_NOMINAL_VOLTAGE / 100
         )
 
     @property
@@ -258,15 +245,7 @@ class InverterBatteryChargeLimitNumber(InverterBatteryPowerLimitNumber):
     async def async_set_native_value(self, value: float) -> None:
         """Update the current charge power limit."""
         raw_value = self.watts_to_api_value(int(value))
-
-        def set_rate(client: GivEnergyClient) -> None:
-            client.set_battery_charge_limit(int(raw_value))
-
-        await async_reliable_call(
-            self.hass,
-            self.coordinator,
-            set_rate,
-        )
+        await self.coordinator.execute(set_battery_charge_limit(raw_value))
 
 
 class InverterBatteryDischargeLimitNumber(InverterBatteryPowerLimitNumber):
@@ -293,12 +272,4 @@ class InverterBatteryDischargeLimitNumber(InverterBatteryPowerLimitNumber):
     async def async_set_native_value(self, value: float) -> None:
         """Update the current discharge power limit."""
         raw_value = self.watts_to_api_value(int(value))
-
-        def set_rate(client: GivEnergyClient) -> None:
-            client.set_battery_discharge_limit(int(raw_value))
-
-        await async_reliable_call(
-            self.hass,
-            self.coordinator,
-            set_rate,
-        )
+        await self.coordinator.execute(set_battery_discharge_limit(raw_value))
