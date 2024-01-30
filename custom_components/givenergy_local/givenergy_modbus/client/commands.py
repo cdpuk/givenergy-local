@@ -6,6 +6,9 @@ from typing import Optional
 from typing_extensions import deprecated  # type: ignore[attr-defined]
 
 from custom_components.givenergy_local.givenergy_modbus.model import TimeSlot
+from custom_components.givenergy_local.givenergy_modbus.model.inverter import (
+    BatteryPauseMode,
+)
 from custom_components.givenergy_local.givenergy_modbus.pdu import (
     ReadHoldingRegistersRequest,
     ReadInputRegistersRequest,
@@ -43,6 +46,7 @@ class RegisterMap:
     BATTERY_DISCHARGE_MIN_POWER_RESERVE = 114
     CHARGE_TARGET_SOC = 116
     REBOOT = 163
+    BATTERY_PAUSE_MODE = 318
 
 
 def refresh_plant_data(
@@ -71,6 +75,11 @@ def refresh_plant_data(
         requests.append(
             ReadHoldingRegistersRequest(
                 base_register=120, register_count=60, slave_address=0x32
+            )
+        )
+        requests.append(
+            ReadHoldingRegistersRequest(
+                base_register=300, register_count=60, slave_address=0x32
             )
         )
         requests.append(
@@ -207,6 +216,13 @@ def set_battery_power_reserve(val: int) -> list[TransparentRequest]:
             RegisterMap.BATTERY_DISCHARGE_MIN_POWER_RESERVE, val
         )
     ]
+
+
+def set_battery_pause_mode(val: BatteryPauseMode) -> list[TransparentRequest]:
+    """Set the battery pause mode."""
+    if not 0 <= val <= 3:
+        raise ValueError(f"Battery pause mode ({val}) must be in [0-3]")
+    return [WriteHoldingRegisterRequest(RegisterMap.BATTERY_PAUSE_MODE, val)]
 
 
 def _set_charge_slot(
