@@ -113,8 +113,9 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                         full_refresh=self.require_full_refresh, retries=2
                     )
             except Exception as err:
+                _LOGGER.error("Closing connection due to expected error: %s", err)
                 await self.client.close()
-                raise UpdateFailed(f"Error communicating with inverter: {err}") from err
+                raise UpdateFailed("Connection closed due to expected error") from err
 
             if not self._is_data_valid(plant):
                 attempt += 1
