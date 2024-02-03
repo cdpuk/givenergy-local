@@ -26,6 +26,7 @@ class Plant(GivEnergyBaseModel):
     register_caches: dict[int, RegisterCache] = {}
     inverter_serial_number: str = ""
     data_adapter_serial_number: str = ""
+    number_batteries: int = 0
 
     class Config:  # noqa: D106
         allow_mutation = True
@@ -80,21 +81,25 @@ class Plant(GivEnergyBaseModel):
                     {HR(pdu.register): pdu.value}
                 )
 
-    @property
-    def inverter(self) -> Inverter:
-        """Return Inverter model for the Plant."""
-        return Inverter.from_orm(self.register_caches[0x32])
+    def detect_batteries(self) -> None:
+        """Determine the number of batteries based on whether the register data is valid.
 
-    @property
-    def number_batteries(self) -> int:
-        """Determine the number of batteries connected to the system based on whether the register data is valid."""
+        Since we attempt to decode register data in the process, it's possible for an
+        exception to be raised.
+        """
         i = 0
         for i in range(6):
             try:
                 assert Battery.from_orm(self.register_caches[i + 0x32]).is_valid()
             except (KeyError, AssertionError):
                 break
-        return i
+        _logger.debug("Updating connected battery count to %d", i)
+        self.number_batteries = i
+
+    @property
+    def inverter(self) -> Inverter:
+        """Return Inverter model for the Plant."""
+        return Inverter.from_orm(self.register_caches[0x32])
 
     @property
     def batteries(self) -> list[Battery]:

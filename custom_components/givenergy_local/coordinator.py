@@ -11,12 +11,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .givenergy_modbus.client.client import Client
+from .givenergy_modbus.exceptions import CommunicationError
 from .givenergy_modbus.model.plant import Plant
 from .givenergy_modbus.pdu.transparent import TransparentRequest
 
 _LOGGER = getLogger(__name__)
 _FULL_REFRESH_INTERVAL = timedelta(minutes=5)
 _REFRESH_ATTEMPTS = 3
+_REFRESH_DELAY_BETWEEN_ATTEMPTS = 2.0
 _COMMAND_TIMEOUT = 3.0
 _COMMAND_RETRIES = 3
 
@@ -98,8 +100,9 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         # to the coordinator, but sometimes we still get bad values. When that data arrives back
         # here, we perform some quality checks and trigger another attempt if something doesn't
         # look right. If all that fails, then data will show as 'unavailable' in the UI.
-        attempt = 1
-        while attempt <= _REFRESH_ATTEMPTS:
+        attempt = 0
+        while attempt < _REFRESH_ATTEMPTS:
+            attempt += 1
             try:
                 async with asyncio.timeout(10):
                     _LOGGER.info(
@@ -112,13 +115,21 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                     plant = await self.client.refresh_plant(
                         full_refresh=self.require_full_refresh, retries=2
                     )
+            except ValueError as err:
+                _LOGGER.warning("Plant refresh failed due to bad data: %s", err)
+                await asyncio.sleep(_REFRESH_DELAY_BETWEEN_ATTEMPTS)
+                continue
+            except CommunicationError as err:
+                _LOGGER.debug("Closing connection due to communication error: %s", err)
+                await self.client.close()
+                raise UpdateFailed() from err
             except Exception as err:
                 _LOGGER.error("Closing connection due to expected error: %s", err)
                 await self.client.close()
                 raise UpdateFailed("Connection closed due to expected error") from err
 
             if not self._is_data_valid(plant):
-                attempt += 1
+                await asyncio.sleep(_REFRESH_DELAY_BETWEEN_ATTEMPTS)
                 continue
 
             if self.require_full_refresh:

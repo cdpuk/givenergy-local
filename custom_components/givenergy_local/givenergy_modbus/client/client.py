@@ -124,6 +124,10 @@ class Client:
             full_refresh, self.plant.number_batteries, max_batteries
         )
         await self.execute(reqs, timeout=timeout, retries=retries)
+
+        if full_refresh:
+            self.plant.detect_batteries()
+
         return self.plant
 
     async def watch_plant(
@@ -138,6 +142,7 @@ class Client:
         """Refresh data about the Plant."""
         await self.connect()
         await self.refresh_plant(True, max_batteries=max_batteries)
+        self.plant.detect_batteries()
         while True:
             if handler:
                 handler()
