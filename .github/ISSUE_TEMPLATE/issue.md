@@ -6,11 +6,9 @@ about: Create a report to help us improve
 
 <!-- Before you open a new issue, search through the existing issues to see if others have had the same problem.
 
-Issues not containing the minimum requirements will be closed:
+There is also a Troubleshooting page linked from the repository README.
 
-- Issues without a description (using the header is not good enough) will be closed.
-- Issues without debug logging will be closed.
-
+Every placeholder in this template must be completed, otherwise your issue may be closed.
 -->
 
 ## Hardware and versions

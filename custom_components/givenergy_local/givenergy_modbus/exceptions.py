@@ -32,3 +32,8 @@ class CommunicationError(ExceptionBase):
 
 class ConversionError(ExceptionBase):
     """Exception to indicate an error converting register values."""
+
+    def __init__(self, key: str, source_registers: list[int], message: str) -> None:
+        super().__init__(message)
+        self.key = key
+        self.source_registers = source_registers

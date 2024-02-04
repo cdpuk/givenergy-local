@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .givenergy_modbus.client.client import Client
-from .givenergy_modbus.exceptions import CommunicationError
+from .givenergy_modbus.exceptions import CommunicationError, ConversionError
 from .givenergy_modbus.model.plant import Plant
 from .givenergy_modbus.pdu.transparent import TransparentRequest
 
@@ -153,8 +153,17 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         try:
             inverter_data = plant.inverter
             _ = plant.batteries
+
+        except ConversionError as err:
+            _LOGGER.warning(
+                "Failed to convert %s from %s: %s",
+                err.key,
+                err.source_registers,
+                err.message,
+            )
+            return False
         except Exception as err:  # pylint: disable=broad-except
-            _LOGGER.warning("Inverter model failed validation: %s", err)
+            _LOGGER.warning("Unexpected register validation error: %s", err)
             return False
 
         for check in _INVERTER_QUALITY_CHECKS:

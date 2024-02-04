@@ -182,9 +182,7 @@ class RegisterGetter(GetterDict):
                     return r.post_conv(val)
             return val
         except ValueError as err:
-            raise ConversionError(
-                f"Failed to convert {key} from {regs}: {err}"
-            ) from err
+            raise ConversionError(key, regs, str(err)) from err
 
     @classmethod
     def to_fields(cls) -> dict[str, tuple[Any, None]]:

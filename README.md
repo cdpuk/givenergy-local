@@ -29,6 +29,7 @@ Your Home Assistant instance must be able to establish a TCP connection to your 
 
 * [Energy dashboard](docs/energy-dashboard.md)
 * [Inverter controls](docs/controls.md)
+* [Troubleshooting](docs/troubleshooting.md)
 * [Uploading to pvoutput.org](docs/pvoutput.md)
 
 ## Limitations
