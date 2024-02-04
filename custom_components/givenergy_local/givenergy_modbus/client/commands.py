@@ -49,8 +49,25 @@ class RegisterMap:
     BATTERY_PAUSE_MODE = 318
 
 
+def refresh_additional_holding_registers(
+    base_register: int,
+) -> list[TransparentRequest]:
+    """Requests one specific set of holding registers.
+
+    This is intended to be used in cases where registers may or may not be present,
+    depending on device capabilities."""
+    return [
+        ReadHoldingRegistersRequest(
+            base_register=base_register, register_count=60, slave_address=0x32
+        )
+    ]
+
+
 def refresh_plant_data(
-    complete: bool, number_batteries: int = 1, max_batteries: int = 5
+    complete: bool,
+    number_batteries: int = 1,
+    max_batteries: int = 5,
+    additional_holding_registers: Optional[list[int]] = None,
 ) -> list[TransparentRequest]:
     """Refresh plant data."""
     requests: list[TransparentRequest] = [
@@ -78,15 +95,15 @@ def refresh_plant_data(
             )
         )
         requests.append(
-            ReadHoldingRegistersRequest(
-                base_register=300, register_count=60, slave_address=0x32
-            )
-        )
-        requests.append(
             ReadInputRegistersRequest(
                 base_register=120, register_count=60, slave_address=0x32
             )
         )
+
+        if additional_holding_registers:
+            for hr in additional_holding_registers:
+                requests.extend(refresh_additional_holding_registers(hr))
+
         number_batteries = max_batteries
     for i in range(number_batteries):
         requests.append(

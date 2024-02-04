@@ -24,6 +24,7 @@ class Plant(GivEnergyBaseModel):
     """Representation of a complete GivEnergy plant."""
 
     register_caches: dict[int, RegisterCache] = {}
+    additional_holding_registers: list[int] = []
     inverter_serial_number: str = ""
     data_adapter_serial_number: str = ""
     number_batteries: int = 0
@@ -93,7 +94,6 @@ class Plant(GivEnergyBaseModel):
                 assert Battery.from_orm(self.register_caches[i + 0x32]).is_valid()
             except (KeyError, AssertionError):
                 break
-        _logger.debug("Updating connected battery count to %d", i)
         self.number_batteries = i
 
     @property
