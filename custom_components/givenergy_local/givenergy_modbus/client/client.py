@@ -75,6 +75,35 @@ class Client:
         self.connected = True
         _logger.info("Connection established to %s:%d", self.host, self.port)
 
+    async def detect_plant(self, timeout: int = 1, retries: int = 3) -> None:
+        """Detect inverter capabilities that influence how subsequent requests are made."""
+        _logger.info("Detectig plant")
+
+        # Refresh the core set of registers that work across all inverters
+        await self.refresh_plant(True, timeout=timeout, retries=retries)
+
+        # Use that to detect the number of batteries
+        self.plant.detect_batteries()
+        _logger.info("Batteries detected: %d", self.plant.number_batteries)
+
+        # Some devices support additional registers
+        # When unsupported, devices appear to simple ignore requests
+        possible_additional_holding_registers = [180]
+        for hr in possible_additional_holding_registers:
+            try:
+                reqs = commands.refresh_additional_holding_registers(hr)
+                await self.execute(reqs, timeout=timeout, retries=retries)
+                _logger.info(
+                    "Detected additional holding register support (base_register=%d)",
+                    hr,
+                )
+                self.plant.additional_holding_registers.append(hr)
+            except asyncio.TimeoutError:
+                _logger.debug(
+                    "Inverter did not respond to additional holder register query (base_register=%d)",
+                    hr,
+                )
+
     async def close(self) -> None:
         """Disconnect from the remote host and clean up tasks and queues."""
         if not self.connected:
@@ -124,10 +153,6 @@ class Client:
             full_refresh, self.plant.number_batteries, max_batteries
         )
         await self.execute(reqs, timeout=timeout, retries=retries)
-
-        if full_refresh:
-            self.plant.detect_batteries()
-
         return self.plant
 
     async def watch_plant(
@@ -142,7 +167,6 @@ class Client:
         """Refresh data about the Plant."""
         await self.connect()
         await self.refresh_plant(True, max_batteries=max_batteries)
-        self.plant.detect_batteries()
         while True:
             if handler:
                 handler()

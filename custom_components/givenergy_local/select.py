@@ -1,4 +1,5 @@
 """Select platform."""
+
 from __future__ import annotations
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
@@ -10,18 +11,16 @@ from custom_components.givenergy_local.givenergy_modbus.client.commands import (
     set_battery_pause_mode,
 )
 
-from .givenergy_modbus.model.inverter import BatteryPauseMode, Generation, Model
-
 from . import GivEnergyUpdateCoordinator
 from .const import DOMAIN, Icon
 from .entity import InverterEntity
-
+from .givenergy_modbus.model.inverter import BatteryPauseMode
 
 _BATTERY_PAUSE_MODE_OPTIONS = {
-    BatteryPauseMode.DISABLED: "DISABLED",
-    BatteryPauseMode.PAUSE_CHARGE: "PAUSE_CHARGE",
-    BatteryPauseMode.PAUSE_DISCHARGE: "PAUSE_DISCHARGE",
-    BatteryPauseMode.PAUSE_BOTH: "PAUSE_BOTH",
+    BatteryPauseMode.DISABLED: "Not Paused",
+    BatteryPauseMode.PAUSE_CHARGE: "Pause Charge",
+    BatteryPauseMode.PAUSE_DISCHARGE: "Pause Discharge",
+    BatteryPauseMode.PAUSE_BOTH: "Pause Charge & Discharge",
 }
 
 
@@ -42,10 +41,7 @@ async def async_setup_entry(
     coordinator: GivEnergyUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     entities: list[SelectEntity] = []
 
-    is_gen1 = coordinator.data.inverter.generation == Generation.GEN1
-    is_aio = coordinator.data.inverter.model == Model.ALL_IN_ONE
-
-    if not is_gen1 or is_aio:
+    if coordinator.data.inverter.battery_pause_mode is not None:
         entities += BatteryPauseModeSelect(
             coordinator,
             config_entry,
