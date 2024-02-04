@@ -88,7 +88,7 @@ class Client:
 
         # Some devices support additional registers
         # When unsupported, devices appear to simple ignore requests
-        possible_additional_holding_registers = [180]
+        possible_additional_holding_registers = [300]
         for hr in possible_additional_holding_registers:
             try:
                 reqs = commands.refresh_additional_holding_registers(hr)
@@ -100,7 +100,7 @@ class Client:
                 self.plant.additional_holding_registers.append(hr)
             except asyncio.TimeoutError:
                 _logger.debug(
-                    "Inverter did not respond to additional holder register query (base_register=%d)",
+                    "Inverter did not respond to holder register query (base_register=%d)",
                     hr,
                 )
 
