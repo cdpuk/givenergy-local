@@ -5,6 +5,9 @@ import math
 from typing import Any, Callable, Optional, Union
 
 from pydantic.utils import GetterDict
+from custom_components.givenergy_local.givenergy_modbus.exceptions import (
+    ConversionError,
+)
 
 from custom_components.givenergy_local.givenergy_modbus.model import TimeSlot
 
@@ -160,23 +163,28 @@ class RegisterGetter(GetterDict):
         if None in regs:
             return None
 
-        if r.pre_conv:
-            if isinstance(r.pre_conv, tuple):
-                args = regs + list(r.pre_conv[1:])
-                val = r.pre_conv[0](*args)
+        try:
+            if r.pre_conv:
+                if isinstance(r.pre_conv, tuple):
+                    args = regs + list(r.pre_conv[1:])
+                    val = r.pre_conv[0](*args)
+                else:
+                    val = r.pre_conv(*regs)
             else:
-                val = r.pre_conv(*regs)
-        else:
-            val = regs
+                val = regs
 
-        if r.post_conv:
-            if isinstance(r.post_conv, tuple):
-                return r.post_conv[0](val, *r.post_conv[1:])
-            else:
-                if not isinstance(r.post_conv, Callable):
-                    pass
-                return r.post_conv(val)
-        return val
+            if r.post_conv:
+                if isinstance(r.post_conv, tuple):
+                    return r.post_conv[0](val, *r.post_conv[1:])
+                else:
+                    if not isinstance(r.post_conv, Callable):
+                        pass
+                    return r.post_conv(val)
+            return val
+        except ValueError as err:
+            raise ConversionError(
+                f"Failed to convert {key} from {regs}: {err}"
+            ) from err
 
     @classmethod
     def to_fields(cls) -> dict[str, tuple[Any, None]]:

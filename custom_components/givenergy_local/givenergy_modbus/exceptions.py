@@ -28,3 +28,7 @@ class InvalidFrame(ExceptionBase):
 
 class CommunicationError(ExceptionBase):
     """Exception to indicate a communication error."""
+
+
+class ConversionError(ExceptionBase):
+    """Exception to indicate an error converting register values."""
