@@ -1,5 +1,5 @@
 {
-	"image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.12-bullseye",
+	"image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
 	"name": "givenergy_local",
 	"appPort": [
 		"9123:8123"
@@ -17,6 +17,7 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
+				"ms-python.black-formatter",
 				"ms-python.python",
 				"github.vscode-pull-request-github",
 				"ryanluker.vscode-coverage-gutters",
