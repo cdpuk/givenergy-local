@@ -1,5 +1,5 @@
 {
-	"image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.11-bullseye",
+	"image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.12-bullseye",
 	"name": "givenergy_local",
 	"appPort": [
 		"9123:8123"

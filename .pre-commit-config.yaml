@@ -5,10 +5,10 @@ repos:
     rev: v3.15.0
     hooks:
       - id: pyupgrade
-        args: [--py311-plus]
+        args: [--py312-plus]
         stages: [manual]
   - repo: https://github.com/psf/black
-    rev: 24.1.1
+    rev: 24.2.0
     hooks:
       - id: black
         args:
@@ -55,11 +55,11 @@ repos:
       - id: check-json
         exclude: (.vscode|.devcontainer)
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.33.0
+    rev: v1.34.0
     hooks:
       - id: yamllint
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.1.0
+    rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
         stages: [manual]
@@ -72,7 +72,7 @@ repos:
       - id: python-typing-update
         stages: [manual]
         args:
-          - --py311-plus
+          - --py312-plus
           - --force
           - --keep-updates
         files: ^(custom_components|tests|script)/.+\.py$
