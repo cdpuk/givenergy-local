@@ -96,6 +96,15 @@ class BatteryType(IntEnum):
     LITHIUM = 1
 
 
+class BatteryPauseMode(IntEnum):
+    """Battery pause mode."""
+
+    DISABLED = 0
+    PAUSE_CHARGE = 1
+    PAUSE_DISCHARGE = 2
+    PAUSE_BOTH = 3
+
+
 class PowerFactorFunctionModel(IntEnum):
     """Power Factor function model."""
 
@@ -232,6 +241,11 @@ class InverterRegisterGetter(RegisterGetter):
         #
         "enable_standard_self_consumption_logic": Def(C.bool, None, HR(199)),
         "cmd_bms_flash_update": Def(C.bool, None, HR(200)),
+        #
+        # Holding Registers, block 300-359
+        #
+        "battery_pause_mode": Def(C.uint16, BatteryPauseMode, HR(318)),
+        "battery_pause_slot_1": Def(C.timeslot, None, HR(319), HR(320)),
         #
         # Holding Registers, block 4080-4139
         #
