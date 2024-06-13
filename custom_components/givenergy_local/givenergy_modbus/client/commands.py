@@ -6,6 +6,9 @@ from arrow import Arrow
 from typing_extensions import deprecated  # type: ignore[attr-defined]
 
 from custom_components.givenergy_local.givenergy_modbus.model import TimeSlot
+from custom_components.givenergy_local.givenergy_modbus.model.inverter import (
+    BatteryPauseMode,
+)
 from custom_components.givenergy_local.givenergy_modbus.pdu import (
     ReadHoldingRegistersRequest,
     ReadInputRegistersRequest,
@@ -43,10 +46,28 @@ class RegisterMap:
     BATTERY_DISCHARGE_MIN_POWER_RESERVE = 114
     CHARGE_TARGET_SOC = 116
     REBOOT = 163
+    BATTERY_PAUSE_MODE = 318
+
+
+def refresh_additional_holding_registers(
+    base_register: int,
+) -> list[TransparentRequest]:
+    """Requests one specific set of holding registers.
+
+    This is intended to be used in cases where registers may or may not be present,
+    depending on device capabilities."""
+    return [
+        ReadHoldingRegistersRequest(
+            base_register=base_register, register_count=60, slave_address=0x32
+        )
+    ]
 
 
 def refresh_plant_data(
-    complete: bool, number_batteries: int = 1, max_batteries: int = 5
+    complete: bool,
+    number_batteries: int = 1,
+    max_batteries: int = 5,
+    additional_holding_registers: Optional[list[int]] = None,
 ) -> list[TransparentRequest]:
     """Refresh plant data."""
     requests: list[TransparentRequest] = [
@@ -78,6 +99,11 @@ def refresh_plant_data(
                 base_register=120, register_count=60, slave_address=0x32
             )
         )
+
+        if additional_holding_registers:
+            for hr in additional_holding_registers:
+                requests.extend(refresh_additional_holding_registers(hr))
+
         number_batteries = max_batteries
     for i in range(number_batteries):
         requests.append(
@@ -207,6 +233,13 @@ def set_battery_power_reserve(val: int) -> list[TransparentRequest]:
             RegisterMap.BATTERY_DISCHARGE_MIN_POWER_RESERVE, val
         )
     ]
+
+
+def set_battery_pause_mode(val: BatteryPauseMode) -> list[TransparentRequest]:
+    """Set the battery pause mode."""
+    if not 0 <= val <= 3:
+        raise ValueError(f"Battery pause mode ({val}) must be in [0-3]")
+    return [WriteHoldingRegisterRequest(RegisterMap.BATTERY_PAUSE_MODE, val)]
 
 
 def _set_charge_slot(
