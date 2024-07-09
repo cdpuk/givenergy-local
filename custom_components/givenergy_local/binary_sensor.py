@@ -161,14 +161,12 @@ class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
             now: time = dt.now().time()
             is_on: bool = slot.start <= now < self.slot.end
             return is_on
-        return None
+        return False
 
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
         """Attach charge slot configuration."""
-        if slot := self.slot:
-            return {
-                "start": slot.start.strftime("%H:%M"),
-                "end": slot.end.strftime("%H:%M"),
-            }
-        return None
+        return {
+            "start": self.slot.start.strftime("%H:%M") if self.slot else None,
+            "end": self.slot.end.strftime("%H:%M") if self.slot else None,
+        }
