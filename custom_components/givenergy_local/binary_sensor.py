@@ -106,12 +106,15 @@ class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
         Work out when we next need to update the state due to the current time
         passing over the start of end time of the slot.
         """
+        if (slot := self.slot) is None:
+            return
+
         now = dt.now()
 
         # Get slot details
         current_time = now.time()
-        start = self.slot.start
-        end = self.slot.end
+        start = slot.start
+        end = slot.end
 
         # We don't need to be notified about entering/leaving an undefined slot
         if start == end:
@@ -146,7 +149,7 @@ class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
         self.async_write_ha_state()
 
     @property
-    def slot(self) -> TimeSlot:
+    def slot(self) -> TimeSlot | None:
         """Get the slot definition."""
         slot: TimeSlot = self.data.dict().get(self.entity_description.key)
         return slot
@@ -154,14 +157,18 @@ class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Determine whether we're currently within the slot."""
-        now: time = dt.now().time()
-        is_on: bool = self.slot.start <= now < self.slot.end
-        return is_on
+        if slot := self.slot:
+            now: time = dt.now().time()
+            is_on: bool = slot.start <= now < self.slot.end
+            return is_on
+        return None
 
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
         """Attach charge slot configuration."""
-        return {
-            "start": self.slot.start.strftime("%H:%M"),
-            "end": self.slot.end.strftime("%H:%M"),
-        }
+        if slot := self.slot:
+            return {
+                "start": slot.start.strftime("%H:%M"),
+                "end": slot.end.strftime("%H:%M"),
+            }
+        return None

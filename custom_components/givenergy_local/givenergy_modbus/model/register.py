@@ -43,8 +43,17 @@ class Converter:
             return (high_val << 16) + low_val
 
     @staticmethod
-    def timeslot(start_time: int, end_time: int) -> TimeSlot:
+    def timeslot(start_time: int, end_time: int) -> Optional[TimeSlot]:
         """Interpret register as a time slot."""
+        if start_time == 60 or end_time == 60:
+            # Probably due to the inverter holding an invalid value in a timeslot.
+            # Real life example register values include:
+            # - [0, 60]
+            # - [60, 2359]
+            # Clearly '60' is the problem value in such cases. This seems to correspond to the
+            # GivEnergy portal displaying '--:--', which we can only assume means 'undefined'.
+            return None
+
         if start_time is not None and end_time is not None:
             return TimeSlot.from_repr(start_time, end_time)
 
