@@ -2,29 +2,29 @@
 exclude: '^custom_components/givenergy_local/givenergy_modbus/.*'
 repos:
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.0
+    rev: v3.16.0
     hooks:
       - id: pyupgrade
         args: [--py312-plus]
         stages: [manual]
   - repo: https://github.com/psf/black
-    rev: 24.2.0
+    rev: 24.4.2
     hooks:
       - id: black
         args:
           - --quiet
         files: ^((custom_components|tests)/.+)?[^/]+\.py$
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.3.0
     hooks:
       - id: codespell
         args:
-          - --ignore-words-list=hass
+          - --ignore-words-list=hass,THIRDPARTY
           - --skip="./.*,*.csv,*.json"
           - --quiet-level=2
         exclude_types: [csv, json]
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.0.0
+    rev: 7.1.0
     hooks:
       - id: flake8
         additional_dependencies:
@@ -35,7 +35,7 @@ repos:
           - mccabe==0.7.0
         files: ^(custom_components|tests)/.+\.py$
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.7
+    rev: 1.7.9
     hooks:
       - id: bandit
         args:
@@ -48,14 +48,14 @@ repos:
     hooks:
       - id: isort
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: check-executables-have-shebangs
         stages: [manual]
       - id: check-json
         exclude: (.vscode|.devcontainer)
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.34.0
+    rev: v1.35.1
     hooks:
       - id: yamllint
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -77,7 +77,7 @@ repos:
           - --keep-updates
         files: ^(custom_components|tests|script)/.+\.py$
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.10.1
     hooks:
       - id: mypy
         args:
