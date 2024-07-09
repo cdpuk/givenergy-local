@@ -42,10 +42,12 @@ async def async_setup_entry(
     entities: list[SelectEntity] = []
 
     if coordinator.data.inverter.battery_pause_mode is not None:
-        entities += BatteryPauseModeSelect(
-            coordinator,
-            config_entry,
-            _BATTERY_PAUSE_MODE_DESCRIPTION,
+        entities.append(
+            BatteryPauseModeSelect(
+                coordinator,
+                config_entry,
+                _BATTERY_PAUSE_MODE_DESCRIPTION,
+            )
         )
     async_add_entities(entities)
 
@@ -67,7 +69,7 @@ class BatteryPauseModeSelect(InverterEntity, SelectEntity):
     @property
     def current_option(self) -> str | None:
         """Return the selected entity option."""
-        return _BATTERY_PAUSE_MODE_OPTIONS[self.data.battery_pause_mode]
+        return _BATTERY_PAUSE_MODE_OPTIONS.get(self.data.battery_pause_mode)
 
     async def async_select_option(self, option: str) -> None:
         """Change the selected option."""
