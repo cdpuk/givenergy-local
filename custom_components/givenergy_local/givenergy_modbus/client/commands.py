@@ -1,6 +1,7 @@
 """High-level methods for interacting with a remote system."""
 
 from datetime import datetime
+from time import time
 from typing import Optional
 
 from typing_extensions import deprecated  # type: ignore[attr-defined]
@@ -47,6 +48,8 @@ class RegisterMap:
     CHARGE_TARGET_SOC = 116
     REBOOT = 163
     BATTERY_PAUSE_MODE = 318
+    BATTERY_PAUSE_SLOT_START = 319
+    BATTERY_PAUSE_SLOT_END = 320
 
 
 def refresh_additional_holding_registers(
@@ -258,6 +261,32 @@ def _set_charge_slot(
         return [
             WriteHoldingRegisterRequest(hr_start, 0),
             WriteHoldingRegisterRequest(hr_end, 0),
+        ]
+
+
+def set_pause_slot_start(start: Optional[time]) -> list[TransparentRequest]:
+    if start:
+        return [
+            WriteHoldingRegisterRequest(
+                RegisterMap.BATTERY_PAUSE_SLOT_START, int(start.strftime("%H%M"))
+            ),
+        ]
+    else:
+        return [
+            WriteHoldingRegisterRequest(RegisterMap.BATTERY_PAUSE_SLOT_START, 0),
+        ]
+
+
+def set_pause_slot_end(end: Optional[time]) -> list[TransparentRequest]:
+    if end:
+        return [
+            WriteHoldingRegisterRequest(
+                RegisterMap.BATTERY_PAUSE_SLOT_END, int(end.strftime("%H%M"))
+            ),
+        ]
+    else:
+        return [
+            WriteHoldingRegisterRequest(RegisterMap.BATTERY_PAUSE_SLOT_END, 0),
         ]
 
 
