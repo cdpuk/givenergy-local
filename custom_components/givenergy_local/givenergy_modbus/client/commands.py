@@ -45,8 +45,24 @@ class RegisterMap:
     REBOOT = 163
 
 
+def refresh_additional_holding_registers(
+    base_register: int,
+) -> list[TransparentRequest]:
+    """Requests one specific set of holding registers.
+    This is intended to be used in cases where registers may or may not be present,
+    depending on device capabilities."""
+    return [
+        ReadHoldingRegistersRequest(
+            base_register=base_register, register_count=60, slave_address=0x32
+        )
+    ]
+
+
 def refresh_plant_data(
-    complete: bool, number_batteries: int = 1, max_batteries: int = 5
+    complete: bool,
+    number_batteries: int = 1,
+    max_batteries: int = 5,
+    additional_holding_registers: Optional[list[int]] = None,
 ) -> list[TransparentRequest]:
     """Refresh plant data."""
     requests: list[TransparentRequest] = [
@@ -85,6 +101,11 @@ def refresh_plant_data(
                 base_register=60, register_count=60, slave_address=0x32 + i
             )
         )
+
+    if additional_holding_registers:
+        for hr in additional_holding_registers:
+            requests.extend(refresh_additional_holding_registers(hr))
+
     return requests
 
 

@@ -24,6 +24,7 @@ class Plant(GivEnergyBaseModel):
     """Representation of a complete GivEnergy plant."""
 
     register_caches: dict[int, RegisterCache] = {}
+    additional_holding_registers: list[int] = []
     inverter_serial_number: str = ""
     data_adapter_serial_number: str = ""
     number_batteries: int = 0
