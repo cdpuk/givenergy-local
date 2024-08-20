@@ -9,21 +9,14 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import device_registry as dr
 import voluptuous as vol
 
+from custom_components.givenergy_local.givenergy_modbus.pdu.transparent import (
+    TransparentRequest,
+)
+
 from .const import DOMAIN, LOGGER
 from .coordinator import GivEnergyUpdateCoordinator
-from .givenergy_modbus.client.commands import (
-    RegisterMap,
-    WriteHoldingRegisterRequest,
-    set_charge_slot_1,
-    set_discharge_mode_max_power,
-    set_discharge_mode_to_match_demand,
-    set_discharge_slot_1,
-    set_enable_charge,
-    set_enable_discharge,
-    set_mode_dynamic,
-)
+from .givenergy_modbus.client.commands import CommandBuilder
 from .givenergy_modbus.model import TimeSlot
-from .givenergy_modbus.pdu.transparent import TransparentRequest
 
 _ATTR_START_TIME = "start_time"
 _ATTR_END_TIME = "end_time"
@@ -137,7 +130,8 @@ async def _async_service_call(
 async def _async_activate_mode_eco(hass: HomeAssistant, data: dict[str, Any]) -> None:
     """Activate 'Eco' mode, as found in the GivEnergy portal."""
     LOGGER.debug("Activating eco mode")
-    await _async_service_call(hass, data[ATTR_DEVICE_ID], set_mode_dynamic())
+    commands = CommandBuilder.set_mode_dynamic()
+    await _async_service_call(hass, data[ATTR_DEVICE_ID], commands)
 
 
 async def _async_activate_mode_timed_discharge(
@@ -147,9 +141,9 @@ async def _async_activate_mode_timed_discharge(
     start_time = datetime.time.fromisoformat(data[_ATTR_START_TIME])
     end_time = datetime.time.fromisoformat(data[_ATTR_END_TIME])
 
-    commands = set_discharge_mode_to_match_demand()
-    commands.extend(set_enable_discharge(True))
-    commands.extend(set_discharge_slot_1(TimeSlot(start_time, end_time)))
+    commands = CommandBuilder.set_discharge_mode_to_match_demand()
+    commands.extend(CommandBuilder.set_enable_discharge(True))
+    commands.extend(CommandBuilder.set_discharge_slot_1(TimeSlot(start_time, end_time)))
 
     LOGGER.debug(
         "Activating timed discharge mode between %s and %s", start_time, end_time
@@ -164,9 +158,9 @@ async def _async_activate_mode_timed_export(
     start_time = datetime.time.fromisoformat(data[_ATTR_START_TIME])
     end_time = datetime.time.fromisoformat(data[_ATTR_END_TIME])
 
-    commands = set_discharge_mode_max_power()
-    commands.extend(set_enable_discharge(True))
-    commands.extend(set_discharge_slot_1(TimeSlot(start_time, end_time)))
+    commands = CommandBuilder.set_discharge_mode_max_power()
+    commands.extend(CommandBuilder.set_enable_discharge(True))
+    commands.extend(CommandBuilder.set_discharge_slot_1(TimeSlot(start_time, end_time)))
 
     LOGGER.debug("Activating timed export mode between %s and %s", start_time, end_time)
     await _async_service_call(hass, data[ATTR_DEVICE_ID], commands)
@@ -179,20 +173,18 @@ async def _async_enable_timed_charge(hass: HomeAssistant, data: dict[str, Any]) 
     Note that this isn't a battery mode like "Timed Discharge", "Eco", etc. It operates in
     parallel to those modes.
     """
-    commands = set_enable_charge(True)
+    commands = CommandBuilder.set_enable_charge(True)
 
     if _ATTR_START_TIME in data and _ATTR_END_TIME in data:
         start_time = datetime.time.fromisoformat(data[_ATTR_START_TIME])
         end_time = datetime.time.fromisoformat(data[_ATTR_END_TIME])
-        commands.extend(set_charge_slot_1(TimeSlot(start_time, end_time)))
+        commands.extend(
+            CommandBuilder.set_charge_slot_1(TimeSlot(start_time, end_time))
+        )
 
     if _ATTR_CHARGE_TARGET in data:
         target_soc = int(data[_ATTR_CHARGE_TARGET])
-        if not 4 <= target_soc <= 100:
-            raise ValueError(f"Charge Target SOC ({target_soc}) must be in [4-100]%")
-        commands.append(
-            WriteHoldingRegisterRequest(RegisterMap.CHARGE_TARGET_SOC, target_soc)
-        )
+        commands.extend(CommandBuilder.set_charge_target(target_soc))
 
     LOGGER.debug("Activating timed charge mode")
     await _async_service_call(hass, data[ATTR_DEVICE_ID], commands)
@@ -203,4 +195,6 @@ async def _async_disable_timed_charge(
 ) -> None:
     """Disable 'Timed Charge', as found in the GivEnergy portal."""
     LOGGER.debug("Deactivating timed charge mode")
-    await _async_service_call(hass, data[ATTR_DEVICE_ID], set_enable_charge(False))
+    await _async_service_call(
+        hass, data[ATTR_DEVICE_ID], CommandBuilder.set_enable_charge(False)
+    )

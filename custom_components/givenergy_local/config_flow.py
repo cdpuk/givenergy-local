@@ -20,7 +20,7 @@ async def read_inverter_serial(data: dict[str, Any]) -> str:
     client = Client(data[CONF_HOST], 8899)
     async with asyncio.timeout(10):
         await client.connect()
-        await client.refresh_plant()
+        await client.detect_plant()
         await client.close()
 
     serial_no: str = client.plant.inverter.serial_number
