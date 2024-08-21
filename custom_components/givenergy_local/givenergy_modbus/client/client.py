@@ -38,6 +38,7 @@ class Client:
     writer: StreamWriter
     network_consumer_task: Task
     network_producer_task: Task
+    slave_address: int
 
     tx_queue: "Queue[Tuple[bytes, Optional[Future]]]"
 
@@ -74,6 +75,7 @@ class Client:
         )
         # asyncio.create_task(self._task_dump_queues_to_files(), name='dump_queues_to_files'),
         self.connected = True
+        self.slave_address = 0x11
         _logger.info("Connection established to %s:%d", self.host, self.port)
 
     async def detect_plant(self, timeout: int = 1, retries: int = 3) -> None:
@@ -82,18 +84,19 @@ class Client:
 
         # Refresh the core set of registers that work across all inverters
         await self.refresh_plant(True, timeout=timeout, retries=retries)
+        _logger.info("Model detected: %s", Model(self.plant.inverter.model).name)
 
         # Use that to detect the number of batteries
-        self.plant.detect_batteries()
-        _logger.info("Batteries detected: %d", self.plant.number_batteries)
+        # TODO: Reinstate battery detection
+        # self.plant.detect_batteries()
+        # _logger.info("Batteries detected: %d", self.plant.number_batteries)
 
-        if self.plant.inverter.model == Model.ALL_IN_ONE:
-            self.plant.slave_address = 0x11
-        else:
-            self.plant.slave_address = 0x32
+        # Update the slave address for subsequent requests
+        if self.plant.inverter.model != Model.ALL_IN_ONE:
+            self.slave_address = 0x32
 
         # Some devices support additional registers
-        # When unsupported, devices appear to simple ignore requests
+        # When unsupported, devices appear to simply ignore requests
         possible_additional_holding_registers = [300]
         for hr in possible_additional_holding_registers:
             try:
@@ -106,7 +109,7 @@ class Client:
                 self.plant.additional_holding_registers.append(hr)
             except asyncio.TimeoutError:
                 _logger.debug(
-                    "Inverter did not respond to holder register query (base_register=%d)",
+                    "Inverter did not respond to holding register query (base_register=%d)",
                     hr,
                 )
 
@@ -172,6 +175,7 @@ class Client:
     ):
         """Refresh data about the Plant."""
         await self.connect()
+        await self.detect_plant()
         await self.refresh_plant(True, max_batteries=max_batteries)
         while True:
             if handler:
@@ -271,6 +275,11 @@ class Client:
         return_exceptions: bool = False,
     ) -> "Future[List[TransparentResponse]]":
         """Helper to perform multiple requests in bulk."""
+        # TODO: Will clobber the slave_address for batteries
+        # Not good for AIO
+        for request in requests:
+            request.slave_address = self.slave_address
+
         return asyncio.gather(
             *[
                 self.send_request_and_await_response(

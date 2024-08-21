@@ -90,6 +90,7 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         """Fetch data from the inverter."""
         if not self.client.connected:
             await self.client.connect()
+            await self.client.detect_plant()
             self.require_full_refresh = True
 
         if self.last_full_refresh < (datetime.utcnow() - _FULL_REFRESH_INTERVAL):

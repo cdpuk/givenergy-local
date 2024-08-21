@@ -51,11 +51,7 @@ def refresh_additional_holding_registers(
     """Requests one specific set of holding registers.
     This is intended to be used in cases where registers may or may not be present,
     depending on device capabilities."""
-    return [
-        ReadHoldingRegistersRequest(
-            base_register=base_register, register_count=60, slave_address=0x32
-        )
-    ]
+    return [ReadHoldingRegistersRequest(base_register=base_register, register_count=60)]
 
 
 def refresh_plant_data(
@@ -66,39 +62,30 @@ def refresh_plant_data(
 ) -> list[TransparentRequest]:
     """Refresh plant data."""
     requests: list[TransparentRequest] = [
-        ReadInputRegistersRequest(
-            base_register=0, register_count=60, slave_address=0x32
-        ),
-        ReadInputRegistersRequest(
-            base_register=180, register_count=60, slave_address=0x32
-        ),
+        ReadInputRegistersRequest(base_register=0, register_count=60),
+        ReadInputRegistersRequest(base_register=180, register_count=60),
     ]
     if complete:
+        requests.append(ReadHoldingRegistersRequest(base_register=0, register_count=60))
         requests.append(
-            ReadHoldingRegistersRequest(
-                base_register=0, register_count=60, slave_address=0x32
-            )
+            ReadHoldingRegistersRequest(base_register=60, register_count=60)
         )
         requests.append(
-            ReadHoldingRegistersRequest(
-                base_register=60, register_count=60, slave_address=0x32
-            )
+            ReadHoldingRegistersRequest(base_register=120, register_count=60)
         )
-        requests.append(
-            ReadHoldingRegistersRequest(
-                base_register=120, register_count=60, slave_address=0x32
-            )
-        )
-        requests.append(
-            ReadInputRegistersRequest(
-                base_register=120, register_count=60, slave_address=0x32
-            )
-        )
+        requests.append(ReadInputRegistersRequest(base_register=120, register_count=60))
         number_batteries = max_batteries
+
+        # TODO: Remove to reinstate battery detection
+        number_batteries = 0
+
     for i in range(number_batteries):
         requests.append(
             ReadInputRegistersRequest(
-                base_register=60, register_count=60, slave_address=0x32 + i
+                # TODO: slave_address for AIO battery?
+                base_register=60,
+                register_count=60,
+                slave_address=0x32 + i,
             )
         )
 
