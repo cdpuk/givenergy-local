@@ -75,7 +75,7 @@ class Client:
         )
         # asyncio.create_task(self._task_dump_queues_to_files(), name='dump_queues_to_files'),
         self.connected = True
-        self.slave_address = 0x11
+        self.slave_address = 0x32
         _logger.info("Connection established to %s:%d", self.host, self.port)
 
     async def detect_plant(self, timeout: int = 1, retries: int = 3) -> None:
