@@ -16,13 +16,7 @@ from homeassistant.helpers.typing import StateType
 from .const import BATTERY_NOMINAL_VOLTAGE, DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import InverterEntity
-from .givenergy_modbus.client.commands import (
-    RegisterMap,
-    set_battery_charge_limit,
-    set_battery_discharge_limit,
-    set_battery_power_reserve,
-    set_battery_soc_reserve,
-)
+from .givenergy_modbus.client.commands import CommandBuilder, RegisterMap
 from .givenergy_modbus.pdu.write_registers import WriteHoldingRegisterRequest
 
 
@@ -139,7 +133,9 @@ class BatterySoCReserveNumber(InverterBasicNumber):
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value."""
-        await self.coordinator.execute(set_battery_soc_reserve(int(value)))
+        await self.coordinator.execute(
+            CommandBuilder.set_battery_soc_reserve(int(value))
+        )
 
 
 class BatteryMinPowerReserveNumber(InverterBasicNumber):
@@ -168,7 +164,9 @@ class BatteryMinPowerReserveNumber(InverterBasicNumber):
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value."""
-        await self.coordinator.execute(set_battery_power_reserve(int(value)))
+        await self.coordinator.execute(
+            CommandBuilder.set_battery_power_reserve(int(value))
+        )
 
 
 class InverterBatteryPowerLimitNumber(InverterBasicNumber):
@@ -245,7 +243,9 @@ class InverterBatteryChargeLimitNumber(InverterBatteryPowerLimitNumber):
     async def async_set_native_value(self, value: float) -> None:
         """Update the current charge power limit."""
         raw_value = self.watts_to_api_value(int(value))
-        await self.coordinator.execute(set_battery_charge_limit(raw_value))
+        await self.coordinator.execute(
+            CommandBuilder.set_battery_charge_limit(raw_value)
+        )
 
 
 class InverterBatteryDischargeLimitNumber(InverterBatteryPowerLimitNumber):
@@ -272,4 +272,6 @@ class InverterBatteryDischargeLimitNumber(InverterBatteryPowerLimitNumber):
     async def async_set_native_value(self, value: float) -> None:
         """Update the current discharge power limit."""
         raw_value = self.watts_to_api_value(int(value))
-        await self.coordinator.execute(set_battery_discharge_limit(raw_value))
+        await self.coordinator.execute(
+            CommandBuilder.set_battery_discharge_limit(raw_value)
+        )

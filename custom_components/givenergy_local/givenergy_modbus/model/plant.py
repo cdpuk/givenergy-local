@@ -94,7 +94,6 @@ class Plant(GivEnergyBaseModel):
                 assert Battery.from_orm(self.register_caches[i + 0x32]).is_valid()
             except (KeyError, AssertionError):
                 break
-        _logger.debug("Updating connected battery count to %d", i)
         self.number_batteries = i
 
     @property
