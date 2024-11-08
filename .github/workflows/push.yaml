@@ -12,7 +12,7 @@ jobs:
     runs-on: "ubuntu-latest"
     name: Validate
     steps:
-      - uses: "actions/checkout@v3"
+      - uses: "actions/checkout@v4"
 
       - name: HACS validation
         uses: "hacs/action@main"
@@ -23,25 +23,14 @@ jobs:
       - name: Hassfest validation
         uses: "home-assistant/actions/hassfest@master"
 
-  style:
-    runs-on: "ubuntu-latest"
-    name: Check style formatting
-    steps:
-      - uses: "actions/checkout@v3"
-      - uses: "actions/setup-python@v1"
-        with:
-          python-version: "3.x"
-      - run: python3 -m pip install black
-      - run: black .
-
   tests:
     runs-on: "ubuntu-latest"
     name: Run tests
     steps:
       - name: Check out code from GitHub
-        uses: "actions/checkout@v3"
+        uses: "actions/checkout@v4"
       - name: Setup Python
-        uses: "actions/setup-python@v4"
+        uses: "actions/setup-python@v5"
         with:
           python-version: "3.12"
       - name: Install requirements

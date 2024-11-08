@@ -130,6 +130,7 @@ class BatteryEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     @property
     def data(self) -> Battery:
         """Get battery data for the entity."""
+        # TODO watch for disappearing batteries
         return self.coordinator.data.batteries[self.battery_id]  # type: ignore[no-any-return]
 
     @property
