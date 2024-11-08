@@ -32,7 +32,7 @@ from .entity import BatteryEntity, InverterEntity
 from .givenergy_modbus.model.inverter import Model
 
 
-@dataclass
+@dataclass(frozen=True)
 class MappedSensorEntityDescription(SensorEntityDescription):
     """Sensor description providing a lookup key to obtain the value."""
 
@@ -327,7 +327,7 @@ async def async_setup_entry(
     """Add sensors for passed config_entry in HA."""
     coordinator: GivEnergyUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
-    entities = []
+    entities: list[SensorEntity] = []
 
     # Add basic inverter sensors that map directly to registers.
     entities.extend(
@@ -407,7 +407,7 @@ class InverterBasicSensor(InverterEntity, SensorEntity):
     @property
     def native_value(self) -> StateType:
         """Return the register value as referenced by the 'key' property of the associated entity description."""
-        return self.data.dict().get(self.entity_description.key)
+        return self.data.dict().get(self.entity_description.key)  # type: ignore[no-any-return]
 
 
 class PVEnergyTodaySensor(InverterBasicSensor):
@@ -416,7 +416,7 @@ class PVEnergyTodaySensor(InverterBasicSensor):
     @property
     def native_value(self) -> StateType:
         """Return the sum of energy generated across both PV strings."""
-        return self.data.e_pv1_day + self.data.e_pv2_day
+        return self.data.e_pv1_day + self.data.e_pv2_day  # type: ignore[no-any-return]
 
 
 class PVPowerSensor(InverterBasicSensor):
@@ -425,7 +425,7 @@ class PVPowerSensor(InverterBasicSensor):
     @property
     def native_value(self) -> StateType:
         """Return the sum of power generated across both PV strings."""
-        return self.data.p_pv1 + self.data.p_pv2
+        return self.data.p_pv1 + self.data.p_pv2  # type: ignore[no-any-return]
 
 
 class ConsumptionTodaySensor(InverterBasicSensor):
@@ -435,7 +435,7 @@ class ConsumptionTodaySensor(InverterBasicSensor):
     def native_value(self) -> StateType:
         """Calculate consumption based on net inverter output plus net grid import."""
 
-        consumption_today = (
+        consumption_today: float = (
             self.data.e_inverter_out_day
             - self.data.e_inverter_in_day
             + self.data.e_grid_in_day
@@ -456,7 +456,7 @@ class ConsumptionTotalSensor(InverterBasicSensor):
     @property
     def native_value(self) -> StateType:
         """Calculate consumption based on net inverter output plus net grid import."""
-        consumption_total = (
+        consumption_total: float = (
             self.data.e_inverter_out_total
             - self.data.e_inverter_in_total
             + self.data.e_grid_in_total
@@ -520,7 +520,7 @@ class BatteryBasicSensor(BatteryEntity, SensorEntity):
     @property
     def native_value(self) -> StateType:
         """Get the register value whose name matches the entity key."""
-        return self.data.dict().get(self.entity_description.ge_modbus_key)
+        return self.data.dict().get(self.entity_description.ge_modbus_key)  # type: ignore[no-any-return]
 
 
 class BatteryRemainingCapacitySensor(BatteryBasicSensor):
@@ -529,7 +529,7 @@ class BatteryRemainingCapacitySensor(BatteryBasicSensor):
     @property
     def native_value(self) -> StateType:
         """Map the low-level Ah value to energy in kWh."""
-        battery_remaining_capacity = (
+        battery_remaining_capacity: float = (
             self.data.cap_remaining * self.data.v_cells_sum / 1000
         )
         # Raw value is in Ah (Amp Hour)

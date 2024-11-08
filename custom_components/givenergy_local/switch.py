@@ -59,7 +59,7 @@ class InverterChargeSwitch(InverterEntity, SwitchEntity):
     @property
     def is_on(self) -> bool | None:
         """Return true if the switch is on."""
-        return self.data.enable_charge  # type: ignore
+        return self.data.enable_charge  # type: ignore[no-any-return]
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable AC charging, subject to charge slot configuration."""
@@ -93,7 +93,7 @@ class InverterDischargeSwitch(InverterEntity, SwitchEntity):
     @property
     def is_on(self) -> bool | None:
         """Return true if the switch is on."""
-        return self.data.enable_discharge  # type: ignore
+        return self.data.enable_discharge  # type: ignore[no-any-return]
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable DC charging, subject to mode and discharge slot configuration."""
@@ -127,7 +127,7 @@ class InverterEcoModeSwitch(InverterEntity, SwitchEntity):
     @property
     def is_on(self) -> bool | None:
         """Return true if the switch is on."""
-        return self.data.battery_power_mode  # type: ignore
+        return self.data.battery_power_mode  # type: ignore[no-any-return]
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable Eco/Dynamic mode."""

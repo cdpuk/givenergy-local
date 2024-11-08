@@ -1,19 +1,14 @@
 ---
 exclude: '^custom_components/givenergy_local/givenergy_modbus/.*'
 repos:
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.16.0
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.2
     hooks:
-      - id: pyupgrade
-        args: [--py312-plus]
-        stages: [manual]
-  - repo: https://github.com/psf/black
-    rev: 24.4.2
-    hooks:
-      - id: black
+      - id: ruff
         args:
-          - --quiet
-        files: ^((custom_components|tests)/.+)?[^/]+\.py$
+          - --fix
+      - id: ruff-format
+        files: ^(custom_components|tests)/.+\.py$
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:
@@ -23,32 +18,8 @@ repos:
           - --skip="./.*,*.csv,*.json"
           - --quiet-level=2
         exclude_types: [csv, json]
-  - repo: https://github.com/PyCQA/flake8
-    rev: 7.1.0
-    hooks:
-      - id: flake8
-        additional_dependencies:
-          - flake8-docstrings==1.7.0
-          - pydocstyle==6.3.0
-          - flake8-comprehensions==3.14.0
-          - flake8-noqa==1.4.0
-          - mccabe==0.7.0
-        files: ^(custom_components|tests)/.+\.py$
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.9
-    hooks:
-      - id: bandit
-        args:
-          - --quiet
-          - --format=custom
-          - --configfile=tests/bandit.yaml
-        files: ^(custom_components|tests)/.+\.py$
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: check-executables-have-shebangs
         stages: [manual]
@@ -64,23 +35,20 @@ repos:
       - id: prettier
         stages: [manual]
   - repo: https://github.com/cdce8p/python-typing-update
-    rev: v0.6.0
+    rev: v0.7.0
     hooks:
-      # Run `python-typing-update` hook manually from time to time
-      # to update python typing syntax.
-      # Will require manual work, before submitting changes!
       - id: python-typing-update
         stages: [manual]
         args:
           - --py312-plus
           - --force
           - --keep-updates
-        files: ^(custom_components|tests|script)/.+\.py$
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.1
+        files: ^(custom_components|tests)/.+\.py$
+  - repo: local
     hooks:
       - id: mypy
-        args:
-          - --pretty
-          - --show-error-codes
-          - --show-error-context
+        name: mypy
+        entry: mypy
+        language: system
+        types_or: [python, pyi]
+        require_serial: true

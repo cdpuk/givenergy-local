@@ -11,7 +11,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, UnitOfPower
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import StateType
 
 from .const import BATTERY_NOMINAL_VOLTAGE, DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
@@ -59,14 +58,14 @@ class InverterBasicNumber(InverterEntity, NumberEntity):
         self.entity_description = entity_description
 
     @property
-    def native_value(self) -> StateType:
+    def native_value(self) -> float | None:
         """
         Get the current value.
 
         This returns the register value as referenced by the 'key' property of
         the associated entity description.
         """
-        return self.data.dict().get(self.entity_description.key)
+        return self.data.dict().get(self.entity_description.key)  # type: ignore[no-any-return]
 
 
 class ACChargeLimitNumber(InverterBasicNumber):
@@ -201,7 +200,7 @@ class InverterBatteryPowerLimitNumber(InverterBasicNumber):
         )
 
     @property
-    def native_value(self) -> StateType:
+    def native_value(self) -> float | None:
         """Get the current value in Watts."""
         raw_value = self.data.dict().get(self.entity_description.key)
         power_watts = int(raw_value * self.battery_power_step)

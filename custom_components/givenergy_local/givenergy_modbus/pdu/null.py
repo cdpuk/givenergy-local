@@ -51,7 +51,7 @@ class NullResponse(TransparentResponse):
             )
         if any(self.nulls):
             _logger.warning(
-                f'Unexpected non-null "register" values: {dict(filter(lambda v: v[1] != 0, enumerate(self.nulls)))}'
+                f'Unexpected non-null "register" values: {dict(filter(lambda v: v[1] != 0, enumerate(self.nulls)))}'  # type: ignore[comparison-overlap]
             )
 
     def _extra_shape_hash_keys(self) -> tuple:

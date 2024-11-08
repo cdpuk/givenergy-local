@@ -1,4 +1,5 @@
 """Data model."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -34,7 +35,7 @@ class DefaultUnknownIntEnum(IntEnum):
 
     @classmethod
     def _missing_(cls, value):
-        return cls.UNKNOWN  # type: ignore[attr-defined] # must be defined in subclasses because of Enum limits
+        return cls.UNKNOWN
 
 
 @dataclass
@@ -52,7 +53,7 @@ class TimeSlot:
         return cls(time(start_hour, start_minute), time(end_hour, end_minute))
 
     @classmethod
-    def from_repr(cls, start: int | str, end: int | str):
+    def from_repr(cls, start: int | str, end: int | str) -> TimeSlot:
         """Converts from human-readable/ASCII representation: '0034' -> 00:34."""
         if isinstance(start, int):
             start = f"{start:04d}"

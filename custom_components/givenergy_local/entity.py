@@ -11,7 +11,6 @@ from custom_components.givenergy_local.givenergy_modbus.model.inverter import (
 from custom_components.givenergy_local.givenergy_modbus.model.plant import (
     Battery,
     Inverter,
-    Plant,
 )
 
 from .const import DOMAIN, MANUFACTURER
@@ -98,7 +97,7 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
         return 3600
 
 
-class BatteryEntity(CoordinatorEntity[Plant]):
+class BatteryEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     """An entity associated with a battery device connected to the inverter."""
 
     battery_id: int
@@ -131,6 +130,7 @@ class BatteryEntity(CoordinatorEntity[Plant]):
     @property
     def data(self) -> Battery:
         """Get battery data for the entity."""
+        # TODO watch for disappearing batteries
         return self.coordinator.data.batteries[self.battery_id]  # type: ignore[no-any-return]
 
     @property

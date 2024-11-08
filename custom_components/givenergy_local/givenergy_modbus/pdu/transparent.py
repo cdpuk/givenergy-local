@@ -122,7 +122,7 @@ class TransparentMessage(BasePDU, ABC):
         """Recalculate CRC of the PDU message."""
         raise NotImplementedError()
 
-    def _extra_shape_hash_keys(self):
+    def _extra_shape_hash_keys(self) -> tuple:
         return (self.slave_address,)
 
 

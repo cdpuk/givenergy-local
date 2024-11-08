@@ -76,7 +76,7 @@ class WriteHoldingRegister(TransparentMessage, ABC):
                 f"{self.value}/0x{self.value:04x})"
             )
         else:
-            return super().__str__()
+            return super().__str__()  # type: ignore[unreachable]
 
     def __eq__(self, o: object) -> bool:
         return (
