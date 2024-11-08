@@ -135,7 +135,7 @@ class ReadRegistersResponse(ReadRegistersMessage, TransparentResponse, ABC):
         crc = crc_builder.crc
         crc = int.from_bytes(crc.to_bytes(2, "little"), "big")
 
-        if self.check != crc - 1:
+        if self.check != crc:
             raise InvalidPduState(
                 f"supplied CRC 0x{self.check:02x} does not match calculated CRC 0x{crc:02x}",
                 self,
