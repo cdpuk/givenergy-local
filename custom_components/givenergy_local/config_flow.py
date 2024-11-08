@@ -6,8 +6,7 @@ import asyncio
 
 from typing import Any
 
-from homeassistant import config_entries
-from homeassistant.data_entry_flow import FlowResult
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 import voluptuous as vol
 
 from .const import CONF_HOST, DOMAIN, LOGGER
@@ -28,17 +27,17 @@ async def read_inverter_serial(data: dict[str, Any]) -> str:
     return serial_no
 
 
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
+class GivEnergyConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for GivEnergy."""
 
     VERSION = 2
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the initial step."""
         if user_input is None:
-            return self.async_show_form(
+            return self.async_show_form(  # type: ignore[no-any-return]
                 step_id="user", data_schema=STEP_USER_DATA_SCHEMA
             )
 
@@ -50,11 +49,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
             LOGGER.exception("Failed to validate inverter configuration")
             errors["base"] = "cannot_connect"
         else:
-            return self.async_create_entry(
+            return self.async_create_entry(  # type: ignore[no-any-return]
                 title=f"Solar Inverter (S/N {serial_no})", data=user_input
             )
 
-        return self.async_show_form(
+        return self.async_show_form(  # type: ignore[no-any-return]
             step_id="user",
             data_schema=self.add_suggested_values_to_schema(
                 STEP_USER_DATA_SCHEMA, user_input

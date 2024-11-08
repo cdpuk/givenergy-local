@@ -239,7 +239,7 @@ class Client:
         timeout: float,
         retries: int,
         return_exceptions: bool = False,
-    ) -> "Future[List[TransparentResponse]]":
+    ) -> "Future[List[TransparentResponse | BaseException]]":
         """Helper to perform multiple requests in bulk."""
         return asyncio.gather(
             *[
@@ -270,9 +270,9 @@ class Client:
                     "Cancelling existing in-flight request and replacing: %s", request
                 )
                 existing_response_future.cancel()
-            response_future: Future[
-                TransparentResponse
-            ] = asyncio.get_event_loop().create_future()
+            response_future: Future[TransparentResponse] = (
+                asyncio.get_event_loop().create_future()
+            )
             self.expected_responses[expected_shape_hash] = response_future
 
             frame_sent = asyncio.get_event_loop().create_future()

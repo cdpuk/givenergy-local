@@ -20,7 +20,7 @@ _PLATFORMS: list[Platform] = [
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up GivEnergy from a config entry."""
-    host = entry.data.get(CONF_HOST)
+    host = str(entry.data.get(CONF_HOST))
 
     coordinator = GivEnergyUpdateCoordinator(hass, host)
     await coordinator.async_config_entry_first_refresh()

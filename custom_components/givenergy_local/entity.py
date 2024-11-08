@@ -11,7 +11,6 @@ from custom_components.givenergy_local.givenergy_modbus.model.inverter import (
 from custom_components.givenergy_local.givenergy_modbus.model.plant import (
     Battery,
     Inverter,
-    Plant,
 )
 
 from .const import DOMAIN, MANUFACTURER
@@ -98,7 +97,7 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
         return 3600
 
 
-class BatteryEntity(CoordinatorEntity[Plant]):
+class BatteryEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     """An entity associated with a battery device connected to the inverter."""
 
     battery_id: int

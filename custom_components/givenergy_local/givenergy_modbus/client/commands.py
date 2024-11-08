@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 
-from typing_extensions import deprecated  # type: ignore[attr-defined]
+from typing_extensions import deprecated
 
 from custom_components.givenergy_local.givenergy_modbus.model import TimeSlot
 from custom_components.givenergy_local.givenergy_modbus.pdu import (

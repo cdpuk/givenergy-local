@@ -58,7 +58,7 @@ class Converter:
             return TimeSlot.from_repr(start_time, end_time)
 
     @staticmethod
-    def bool(val: int) -> bool:
+    def bool(val: int | None) -> bool | None:
         """Interpret register as a bool."""
         if val is not None:
             return bool(val)
@@ -149,7 +149,7 @@ class RegisterDefinition:
     def __init__(self, *args, **kwargs):
         self.pre_conv = args[0]
         self.post_conv = args[1]
-        self.registers = args[2:]  # type: ignore[assignment]
+        self.registers = args[2:]
 
     def __hash__(self):
         return hash(self.registers)
@@ -186,7 +186,7 @@ class RegisterGetter(GetterDict):
                 if isinstance(r.post_conv, tuple):
                     return r.post_conv[0](val, *r.post_conv[1:])
                 else:
-                    if not isinstance(r.post_conv, Callable):
+                    if not isinstance(r.post_conv, Callable):  # type: ignore[arg-type]
                         pass
                     return r.post_conv(val)
             return val
@@ -236,7 +236,7 @@ class RegisterEncoder(JSONEncoder):
         if isinstance(o, Register):
             return f"{o._type}_{o._idx}"
         else:
-            return super().default(o)
+            return super().default(o)  # type: ignore[no-any-return]
 
 
 class Register:

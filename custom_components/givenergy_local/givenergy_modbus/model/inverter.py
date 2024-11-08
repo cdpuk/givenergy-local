@@ -40,7 +40,7 @@ class Generation(StrEnum):
     GEN3 = "Gen 3"
 
     @classmethod
-    def _missing_(cls, value: int):
+    def _missing_(cls, value: int) -> "Generation":  # type: ignore[override]
         """Pick generation from the arm_firmware_version."""
         arm_firmware_version_to_gen = {
             3: cls.GEN3,
