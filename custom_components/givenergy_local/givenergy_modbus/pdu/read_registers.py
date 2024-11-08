@@ -123,14 +123,23 @@ class ReadRegistersResponse(ReadRegistersMessage, TransparentResponse, ABC):
                 f"Expected padding 0x{expected_padding:02x}, found 0x{self.padding:02x} instead: {self}"
             )
 
-        # FIXME how to test crc
-        # crc_builder = BinaryPayloadBuilder(byteorder=Endian.Big)
-        # crc_builder.add_8bit_uint(self.function_code)
-        # crc_builder.add_16bit_uint(self.base_register)
-        # crc_builder.add_16bit_uint(self.register_count)
-        # # [crc_builder.add_16bit_uint(r) for r in self.register_values]
-        # crc = CrcModbus().process(crc_builder.to_string()).final()
-        # _logger.warning(f'supplied crc = {self.check}, calculated crc = {crc}')
+        crc_builder = PayloadEncoder()
+        crc_builder.add_8bit_uint(self.slave_address)
+        crc_builder.add_8bit_uint(self.transparent_function_code)
+        crc_builder.add_string(
+            self.inverter_serial_number, len(self.inverter_serial_number)
+        )
+        crc_builder.add_16bit_uint(self.base_register)
+        crc_builder.add_16bit_uint(self.register_count)
+        [crc_builder.add_16bit_uint(r) for r in self.register_values]
+        crc = crc_builder.crc
+        crc = int.from_bytes(crc.to_bytes(2, "little"), "big")
+
+        if self.check != crc - 1:
+            raise InvalidPduState(
+                f"supplied CRC 0x{self.check:02x} does not match calculated CRC 0x{crc:02x}",
+                self,
+            )
 
     def to_dict(self) -> dict[int, int]:
         """Return the registers as a dict of register_index:value. Accounts for base_register offsets."""
