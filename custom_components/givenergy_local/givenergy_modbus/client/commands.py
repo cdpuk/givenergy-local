@@ -53,9 +53,6 @@ def refresh_plant_data(
         ReadInputRegistersRequest(
             base_register=0, register_count=60, slave_address=0x32
         ),
-        ReadInputRegistersRequest(
-            base_register=180, register_count=60, slave_address=0x32
-        ),
     ]
     if complete:
         requests.append(
@@ -70,11 +67,6 @@ def refresh_plant_data(
         )
         requests.append(
             ReadHoldingRegistersRequest(
-                base_register=120, register_count=60, slave_address=0x32
-            )
-        )
-        requests.append(
-            ReadInputRegistersRequest(
                 base_register=120, register_count=60, slave_address=0x32
             )
         )
