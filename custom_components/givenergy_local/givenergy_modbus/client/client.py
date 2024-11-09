@@ -8,6 +8,7 @@ from custom_components.givenergy_local.givenergy_modbus.client import commands
 from custom_components.givenergy_local.givenergy_modbus.exceptions import (
     CommunicationError,
     ExceptionBase,
+    InvalidPduState,
 )
 from custom_components.givenergy_local.givenergy_modbus.framer import (
     ClientFramer,
@@ -19,6 +20,9 @@ from custom_components.givenergy_local.givenergy_modbus.pdu import (
     TransparentRequest,
     TransparentResponse,
     WriteHoldingRegisterResponse,
+)
+from custom_components.givenergy_local.givenergy_modbus.pdu.read_registers import (
+    ReadRegistersResponse,
 )
 
 _logger = logging.getLogger(__name__)
@@ -166,13 +170,12 @@ class Client:
             frame = await self.reader.read(300)
             # await self.debug_frames['all'].put(frame)
             async for message in self.framer.decode(frame):
-                _logger.debug("Processing %s", message)
                 if isinstance(message, ExceptionBase):
-                    _logger.warning(
-                        "Expected response never arrived but resulted in exception: %s",
-                        message,
-                    )
+                    self._log_error_response(message)
                     continue
+                else:
+                    _logger.debug("Processing %s", message)
+
                 if isinstance(message, HeartbeatRequest):
                     _logger.debug("Responding to HeartbeatRequest")
                     await self.tx_queue.put(
@@ -311,3 +314,20 @@ class Client:
             timeout,
         )
         raise asyncio.TimeoutError()
+
+    def _log_error_response(self, exception: ExceptionBase):
+        """Log error responses in a helpful way to aid debugging."""
+        if isinstance(exception, InvalidPduState):
+            if isinstance(pdu := exception.pdu, ReadRegistersResponse):
+                # We say 'possibly', because a corrupt PDU may contain garbage values
+                _logger.warning(
+                    "Decoding response (possibly %s) resulted in exception: %s",
+                    pdu,
+                    exception,
+                )
+                return
+
+        _logger.warning(
+            "Response processing resulted in exception: %s",
+            exception,
+        )

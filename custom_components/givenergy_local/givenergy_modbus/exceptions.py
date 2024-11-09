@@ -1,3 +1,9 @@
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from custom_components.givenergy_local.givenergy_modbus.pdu.base import BasePDU
+
+
 class ExceptionBase(Exception):
     """Base exception."""
 
@@ -11,7 +17,7 @@ class ExceptionBase(Exception):
 class InvalidPduState(ExceptionBase):
     """Thrown during PDU self-validation."""
 
-    def __init__(self, message: str, pdu) -> None:
+    def __init__(self, message: str, pdu: "BasePDU") -> None:
         super().__init__(message=message)
         self.pdu = pdu
 
