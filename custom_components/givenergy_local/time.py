@@ -11,12 +11,11 @@ from homeassistant.components.time import TimeEntity, TimeEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import StateType
 
 from .const import DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import InverterEntity
-from .givenergy_modbus.client.commands import set_pause_slot_end, set_pause_slot_start
+from .givenergy_modbus.client.commands import CommandBuilder
 from .givenergy_modbus.model import TimeSlot
 
 
@@ -43,7 +42,7 @@ _BATTERY_PAUSE_ENTITIES = [
         icon=Icon.BATTERY_PAUSE,
         ge_modbus_key="battery_pause_slot_1",
         get_fn=lambda t: t.start,
-        set_fn=lambda c, t: c.execute(set_pause_slot_start(t)),
+        set_fn=lambda c, t: c.execute(CommandBuilder.set_pause_slot_start(t)),
     ),
     MappedTimeEntityDescription(
         key="battery_pause_slot_1_end",
@@ -51,7 +50,7 @@ _BATTERY_PAUSE_ENTITIES = [
         icon=Icon.BATTERY_PAUSE,
         ge_modbus_key="battery_pause_slot_1",
         get_fn=lambda t: t.end,
-        set_fn=lambda c, t: c.execute(set_pause_slot_end(t)),
+        set_fn=lambda c, t: c.execute(CommandBuilder.set_pause_slot_end(t)),
     ),
 ]
 
@@ -100,10 +99,11 @@ class InverterTimeslotSensor(InverterEntity, TimeEntity):
         self.entity_description = entity_description
 
     @property
-    def native_value(self) -> StateType:
+    def native_value(self) -> time | None:
         """Return the register value as referenced by the 'key' property of the associated entity description."""
         if slot := self.data.dict().get(self.entity_description.ge_modbus_key):
             return self.entity_description.get_fn(slot)
+        return None
 
     async def async_set_value(self, value: time) -> None:
         """Update the current value."""

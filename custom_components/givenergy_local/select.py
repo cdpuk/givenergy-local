@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from custom_components.givenergy_local.givenergy_modbus.client.commands import (
-    set_battery_pause_mode,
+    CommandBuilder,
 )
 
 from . import GivEnergyUpdateCoordinator
@@ -75,4 +75,6 @@ class BatteryPauseModeSelect(InverterEntity, SelectEntity):
         """Change the selected option."""
         for val in BatteryPauseMode:
             if option == _BATTERY_PAUSE_MODE_OPTIONS[val]:
-                await self.coordinator.execute(set_battery_pause_mode(val))
+                await self.coordinator.execute(
+                    CommandBuilder.set_battery_pause_mode(val)
+                )

@@ -9,7 +9,7 @@ from typing_extensions import deprecated  # type: ignore[attr-defined]
 from custom_components.givenergy_local.givenergy_modbus.model import TimeSlot
 from custom_components.givenergy_local.givenergy_modbus.model.inverter import (
     BatteryPauseMode,
-	Model,
+    Model,
 )
 from custom_components.givenergy_local.givenergy_modbus.pdu import (
     ReadHoldingRegistersRequest,
@@ -53,9 +53,7 @@ class RegisterMap:
     BATTERY_PAUSE_SLOT_END = 320
 
 
-
 class CommandBuilder:
-
     def __init__(self, model: Optional[Model] = None) -> None:
         self.model = model
         if model in [None, Model.ALL_IN_ONE]:
@@ -249,11 +247,11 @@ class CommandBuilder:
         ]
 
     @staticmethod
-	def set_battery_pause_mode(val: BatteryPauseMode) -> list[TransparentRequest]:
-	    """Set the battery pause mode."""
-	    if not 0 <= val <= 3:
-	        raise ValueError(f"Battery pause mode ({val}) must be in [0-3]")
-	    return [WriteHoldingRegisterRequest(RegisterMap.BATTERY_PAUSE_MODE, val)]
+    def set_battery_pause_mode(val: BatteryPauseMode) -> list[TransparentRequest]:
+        """Set the battery pause mode."""
+        if not 0 <= val <= 3:
+            raise ValueError(f"Battery pause mode ({val}) must be in [0-3]")
+        return [WriteHoldingRegisterRequest(RegisterMap.BATTERY_PAUSE_MODE, val)]
 
     @staticmethod
     def _set_charge_slot(
@@ -274,32 +272,32 @@ class CommandBuilder:
             return [
                 WriteHoldingRegisterRequest(hr_start, 0),
                 WriteHoldingRegisterRequest(hr_end, 0),
-        ]
+            ]
 
     @staticmethod
-	def set_pause_slot_start(start: Optional[time]) -> list[TransparentRequest]:
-	    if start:
-	        return [
-	            WriteHoldingRegisterRequest(
-	                RegisterMap.BATTERY_PAUSE_SLOT_START, int(start.strftime("%H%M"))
-	            ),
-	        ]
-	    else:
-	        return [
-	            WriteHoldingRegisterRequest(RegisterMap.BATTERY_PAUSE_SLOT_START, 0),
-	        ]
+    def set_pause_slot_start(start: Optional[time]) -> list[TransparentRequest]:
+        if start:
+            return [
+                WriteHoldingRegisterRequest(
+                    RegisterMap.BATTERY_PAUSE_SLOT_START, int(start.strftime("%H%M"))
+                ),
+            ]
+        else:
+            return [
+                WriteHoldingRegisterRequest(RegisterMap.BATTERY_PAUSE_SLOT_START, 0),
+            ]
 
     @staticmethod
-	def set_pause_slot_end(end: Optional[time]) -> list[TransparentRequest]:
-	    if end:
-	        return [
-	            WriteHoldingRegisterRequest(
-	                RegisterMap.BATTERY_PAUSE_SLOT_END, int(end.strftime("%H%M"))
-	            ),
-	        ]
-	    else:
-	        return [
-	            WriteHoldingRegisterRequest(RegisterMap.BATTERY_PAUSE_SLOT_END, 0),
+    def set_pause_slot_end(end: Optional[time]) -> list[TransparentRequest]:
+        if end:
+            return [
+                WriteHoldingRegisterRequest(
+                    RegisterMap.BATTERY_PAUSE_SLOT_END, int(end.strftime("%H%M"))
+                ),
+            ]
+        else:
+            return [
+                WriteHoldingRegisterRequest(RegisterMap.BATTERY_PAUSE_SLOT_END, 0),
             ]
 
     @staticmethod
