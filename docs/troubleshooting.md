@@ -27,12 +27,18 @@ To access this:
 
 The "Remote Control History" panel is particularly useful, as the "Show Raw Values" checkbox exposes the values get sent to/from the inverter.
 
-## Data issues
+## CRC errors
 
-Sometimes inverters supply bad data to the integration that can't be understood. This may cause the integration to fail.
+Logs may sometimes indicate CRC errors in data received from the inverter. This happens when corrupt/invalid data is received. The integration will automatically retry up to a limit of 3 total attempts for each request. After that point it will give up and entities in the UI will be `unavailable` until data can be fetched successfully again.
 
-### Timeslots with invalid values
+The volume of these errors typically increases when the inverter is being queried from multiple locations at the same time, e.g. by running both this integration and GivTCP.
+
+## Timeslots with invalid values
 
 If you can't connect at all and your logs mention failure to convert charge/discharge slot values, you may find that these values are not correctly set on the inverter.
 
 To see all available slots, you must log in to the GivEnergy web portal (see above). If any of the start/end times are blank, update these with a value, even if it's just to set the start and end times to the same value.
+
+## Low level debug
+
+If you're struggling to get data out of your inverter, you may need to resort to [low-level debugging](debug.md) to understand how the data is structured.
