@@ -117,6 +117,9 @@ class Client:
         # When unsupported, devices appear to simply ignore requests
         # If we had a clear mapping of what's supported across models/generations,
         # this could be moved to the CommandBuilder
+        _logger.info(
+            "Checking whether your inverter supports additonal features - some requests may fail"
+        )
         possible_additional_holding_registers = [300]
         for hr in possible_additional_holding_registers:
             try:
@@ -132,6 +135,9 @@ class Client:
                     "Inverter did not respond to holding register query (base_register=%d)",
                     hr,
                 )
+        _logger.info(
+            "Finished checking whether your inverter supports additonal features"
+        )
 
     async def close(self) -> None:
         """Disconnect from the remote host and clean up tasks and queues."""
