@@ -4,7 +4,9 @@ import socket
 from asyncio import Future, Queue, StreamReader, StreamWriter, Task
 from typing import Callable, Dict, List, Optional, Tuple
 
-from custom_components.givenergy_local.givenergy_modbus.client import commands
+from custom_components.givenergy_local.givenergy_modbus.client.commands import (
+    CommandBuilder,
+)
 from custom_components.givenergy_local.givenergy_modbus.exceptions import (
     CommunicationError,
     ExceptionBase,
@@ -14,6 +16,7 @@ from custom_components.givenergy_local.givenergy_modbus.framer import (
     ClientFramer,
     Framer,
 )
+from custom_components.givenergy_local.givenergy_modbus.model.inverter import Model
 from custom_components.givenergy_local.givenergy_modbus.model.plant import Plant
 from custom_components.givenergy_local.givenergy_modbus.pdu import (
     HeartbeatRequest,
@@ -34,6 +37,7 @@ class Client:
     framer: Framer
     expected_responses: "Dict[int, Future[TransparentResponse]]" = {}
     plant: Plant
+    command_builder: CommandBuilder
     # refresh_count: int = 0
     # debug_frames: Dict[str, Queue]
     connected = False
@@ -50,6 +54,7 @@ class Client:
         self.connect_timeout = connect_timeout
         self.framer = ClientFramer()
         self.plant = Plant()
+        self.command_builder = CommandBuilder()
         self.tx_queue = Queue(maxsize=20)
         # self.debug_frames = {
         #     'all': Queue(maxsize=1000),
@@ -78,6 +83,55 @@ class Client:
         # asyncio.create_task(self._task_dump_queues_to_files(), name='dump_queues_to_files'),
         self.connected = True
         _logger.info("Connection established to %s:%d", self.host, self.port)
+
+    async def detect_plant(self, timeout: int = 1, retries: int = 3) -> None:
+        """Detect inverter capabilities that influence how subsequent requests are made.
+
+        A full refresh of all data is performed in the process."""
+
+        # Refresh the core set of registers that work across all inverters
+        _logger.info("Performing model detection")
+        await self.refresh_plant(
+            True, max_batteries=0, timeout=timeout, retries=retries
+        )
+
+        # Different models accept slightly different commands, for example, querying an
+        # AIO for battery information will time out. Now we know the model, refresh
+        # all data again.
+        _logger.info(
+            "Detecting additional capabilities based on model: %s",
+            Model(self.plant.inverter.model).name,
+        )
+        self.command_builder = CommandBuilder(self.plant.inverter.model)
+        await self.refresh_plant(True, timeout=timeout, retries=retries)
+
+        # Use that to detect the number of batteries
+        self.plant.detect_batteries()
+        _logger.info(
+            "Detected %d external %s connected",
+            self.plant.number_batteries,
+            "battery" if self.plant.number_batteries == 1 else "batteries",
+        )
+
+        # Some devices support additional registers
+        # When unsupported, devices appear to simply ignore requests
+        # If we had a clear mapping of what's supported across models/generations,
+        # this could be moved to the CommandBuilder
+        possible_additional_holding_registers = [300]
+        for hr in possible_additional_holding_registers:
+            try:
+                reqs = self.command_builder.refresh_additional_holding_registers(hr)
+                await self.execute(reqs, timeout=timeout, retries=retries)
+                _logger.info(
+                    "Detected additional holding register support (base_register=%d)",
+                    hr,
+                )
+                self.plant.additional_holding_registers.append(hr)
+            except asyncio.TimeoutError:
+                _logger.debug(
+                    "Inverter did not respond to holding register query (base_register=%d)",
+                    hr,
+                )
 
     async def close(self) -> None:
         """Disconnect from the remote host and clean up tasks and queues."""
@@ -124,14 +178,10 @@ class Client:
         retries: int = 0,
     ) -> Plant:
         """Refresh data about the Plant."""
-        reqs = commands.refresh_plant_data(
+        reqs = self.command_builder.refresh_plant_data(
             full_refresh, self.plant.number_batteries, max_batteries
         )
         await self.execute(reqs, timeout=timeout, retries=retries)
-
-        if full_refresh:
-            self.plant.detect_batteries()
-
         return self.plant
 
     async def watch_plant(
@@ -145,14 +195,15 @@ class Client:
     ):
         """Refresh data about the Plant."""
         await self.connect()
-        await self.refresh_plant(True, max_batteries=max_batteries)
-        self.plant.detect_batteries()
+        await self.detect_plant()
         while True:
             if handler:
                 handler()
             await asyncio.sleep(refresh_period)
             if not passive:
-                reqs = commands.refresh_plant_data(False, self.plant.number_batteries)
+                reqs = self.command_builder.refresh_plant_data(
+                    False, self.plant.number_batteries
+                )
                 await self.execute(
                     reqs, timeout=timeout, retries=retries, return_exceptions=True
                 )

@@ -12,12 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import InverterEntity
-from .givenergy_modbus.client.commands import (
-    set_discharge_mode_max_power,
-    set_discharge_mode_to_match_demand,
-    set_enable_charge,
-    set_enable_discharge,
-)
+from .givenergy_modbus.client.commands import CommandBuilder
 
 
 async def async_setup_entry(
@@ -63,11 +58,11 @@ class InverterChargeSwitch(InverterEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable AC charging, subject to charge slot configuration."""
-        await self.coordinator.execute(set_enable_charge(True))
+        await self.coordinator.execute(CommandBuilder.set_enable_charge(True))
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Disable AC charging, subject to charge slot configuration."""
-        await self.coordinator.execute(set_enable_charge(False))
+        await self.coordinator.execute(CommandBuilder.set_enable_charge(False))
 
 
 class InverterDischargeSwitch(InverterEntity, SwitchEntity):
@@ -97,11 +92,11 @@ class InverterDischargeSwitch(InverterEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable DC charging, subject to mode and discharge slot configuration."""
-        await self.coordinator.execute(set_enable_discharge(True))
+        await self.coordinator.execute(CommandBuilder.set_enable_discharge(True))
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Disable DC discharging, subject to mode and discharge slot configuration."""
-        await self.coordinator.execute(set_enable_discharge(False))
+        await self.coordinator.execute(CommandBuilder.set_enable_discharge(False))
 
 
 class InverterEcoModeSwitch(InverterEntity, SwitchEntity):
@@ -131,8 +126,10 @@ class InverterEcoModeSwitch(InverterEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable Eco/Dynamic mode."""
-        await self.coordinator.execute(set_discharge_mode_to_match_demand())
+        await self.coordinator.execute(
+            CommandBuilder.set_discharge_mode_to_match_demand()
+        )
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Disable Eco/Dynamic mode."""
-        await self.coordinator.execute(set_discharge_mode_max_power())
+        await self.coordinator.execute(CommandBuilder.set_discharge_mode_max_power())

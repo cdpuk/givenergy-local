@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from logging import getLogger
 
 from homeassistant.core import HomeAssistant
@@ -90,9 +90,13 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         """Fetch data from the inverter."""
         if not self.client.connected:
             await self.client.connect()
-            self.require_full_refresh = True
+            await self.client.detect_plant()
+            self.last_full_refresh = datetime.now(UTC)
 
-        if self.last_full_refresh < (datetime.utcnow() - _FULL_REFRESH_INTERVAL):
+            # Detection performs a full refresh - no need to trigger another one now
+            return self.client.plant
+
+        if self.last_full_refresh < (datetime.now(UTC) - _FULL_REFRESH_INTERVAL):
             self.require_full_refresh = True
 
         # Allow a few attempts to pull back valid data.
@@ -134,7 +138,7 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
 
             if self.require_full_refresh:
                 self.require_full_refresh = False
-                self.last_full_refresh = datetime.utcnow()
+                self.last_full_refresh = datetime.now(UTC)
             return plant
 
         raise UpdateFailed(
