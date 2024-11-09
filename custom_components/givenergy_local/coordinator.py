@@ -91,8 +91,8 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         if not self.client.connected:
             await self.client.connect()
             await self.client.detect_plant()
+            self.require_full_refresh = False
             self.last_full_refresh = datetime.now(UTC)
-
             # Detection performs a full refresh - no need to trigger another one now
             return self.client.plant
 
