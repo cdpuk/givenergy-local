@@ -137,7 +137,7 @@ class ReadRegistersResponse(ReadRegistersMessage, TransparentResponse, ABC):
 
         if self.check != crc:
             raise InvalidPduState(
-                f"supplied CRC 0x{self.check:02x} does not match calculated CRC 0x{crc:02x}",
+                f"supplied CRC 0x{self.check:04x} does not match calculated CRC 0x{crc:04x}",
                 self,
             )
 
