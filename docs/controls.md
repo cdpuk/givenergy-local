@@ -68,6 +68,8 @@ Activating this mode is equivalent to configuring the following individual optio
 * Set `switch.battery_eco_mode` to `on`.
 * Set `switch.battery_dc_discharging` to `off`.
 
+Note that this does not affect your AC charging settings which, if enabled, will continue to take priority.
+
 ### Activate timed discharge mode
 
 This is supposed to discharge the battery for home consumption only during the specified time period.
@@ -97,15 +99,14 @@ Ways to turn this off include:
 
 The battery will charge from the grid during the defined time period, up to the SOC as given.
 
+Charging settings work completely independently of the discharging settings; changing one does not affect the other. It's just that AC charging takes priority during the configured time slot.
+
 Activating this mode is equivalent to configuring the following individual options:
 * Set `switch.battery_ac_charging` to `on`.
 * Set `number.battery_ac_charge_limit`.
 * Set the first battery charge slot.
 
-Ways to turn this off include:
-
-* [Activate eco mode](#activate-eco-mode)
-* Set `switch.battery_dc_discharging` to `off`.
+To turn this off, set `switch.battery_ac_charging` to `off`.
 
 ### Disable timed charging
 
