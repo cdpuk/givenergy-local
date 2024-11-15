@@ -168,7 +168,7 @@ async def _async_activate_mode_timed_export(
 
 async def _async_enable_timed_charge(hass: HomeAssistant, data: dict[str, Any]) -> None:
     """
-    Enable 'Timed Charge', as found in the GivEnergy portal.
+    Enable 'Timed Charge', as found in the GivEnergy app and portal.
 
     Note that this isn't a battery mode like "Timed Discharge", "Eco", etc. It operates in
     parallel to those modes.
@@ -184,7 +184,12 @@ async def _async_enable_timed_charge(hass: HomeAssistant, data: dict[str, Any]) 
 
     if _ATTR_CHARGE_TARGET in data:
         target_soc = int(data[_ATTR_CHARGE_TARGET])
+
+        # If target SOC is 100% with charge target enabled, the inverter unhelpfully
+        # bounces between 99-100% in a charge/discharge cycle, so avoid this, matching
+        # behaviour of GivEnergy logic.
         commands.extend(CommandBuilder.set_charge_target(target_soc))
+        commands.extend(CommandBuilder.set_enable_charge_target(target_soc < 100))
 
     LOGGER.debug("Activating timed charge mode")
     await _async_service_call(hass, data[ATTR_DEVICE_ID], commands)
