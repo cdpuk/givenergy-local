@@ -37,7 +37,7 @@ _GENERIC_ENTITIES = [
     ),
     MappedSwitchEntityDescription(
         key="enable_charge_target",
-        name="Battery AC Charge Target",
+        name="Battery AC Charge Limit",
         icon=Icon.BATTERY_PLUS,
         set_fn=lambda c, v: c.execute(CommandBuilder.set_enable_charge_target(v)),
     ),
