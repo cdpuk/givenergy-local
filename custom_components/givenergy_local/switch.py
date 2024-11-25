@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Awaitable, Callable
+from typing import Any, Awaitable, Callable
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.config_entries import ConfigEntry
@@ -91,12 +91,16 @@ class InverterSwitch(InverterEntity, SwitchEntity):
         self.entity_description = entity_description
 
     @property
-    def native_value(self) -> bool | None:
+    def is_on(self) -> bool | None:
         """Return the register value as referenced by the 'key' property of the associated entity description."""
-        if val := self.data.dict().get(self.entity_description.key):
+        if (val := self.data.dict().get(self.entity_description.key)) is not None:
             return val  # type: ignore[no-any-return]
         return None
 
-    async def async_set_value(self, value: bool) -> None:
-        """Update the current value."""
-        self.entity_description.set_fn(self.coordinator, value)
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn the switch on."""
+        await self.entity_description.set_fn(self.coordinator, True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn the switch off."""
+        await self.entity_description.set_fn(self.coordinator, False)
