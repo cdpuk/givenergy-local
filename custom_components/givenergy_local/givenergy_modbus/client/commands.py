@@ -154,6 +154,11 @@ class CommandBuilder:
         return [WriteHoldingRegisterRequest(RegisterMap.ENABLE_CHARGE, enabled)]
 
     @staticmethod
+    def set_enable_charge_target(enabled: bool) -> list[TransparentRequest]:
+        """Enable the battery SOC target for charging."""
+        return [WriteHoldingRegisterRequest(RegisterMap.ENABLE_CHARGE_TARGET, enabled)]
+
+    @staticmethod
     def set_enable_discharge(enabled: bool) -> list[TransparentRequest]:
         """Enable the battery to discharge, depending on the mode and slots set."""
         return [WriteHoldingRegisterRequest(RegisterMap.ENABLE_DISCHARGE, enabled)]

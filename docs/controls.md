@@ -15,7 +15,12 @@ It's perfectly valid to set the value to 0, which has the effect of pausing char
 
 ### Battery AC charge limit
 
-Use `number.battery_ac_charge_limit` to set the target battery percentage when charging from the grid.
+Two low-level entities control the AC charge limit:
+
+* `number.battery_ac_charge_limit` sets the target battery percentage when charging from the grid.
+* `switch.battery_ac_charge_limit` determines whether that percentage is actually respected or simply ignored.
+
+Odd behaviour can occur when the switch is left on while the limit is set to 100%, in particular the battery charge can be seen to "bounce" between 99% and 100%, charging and discharging between the two while AC charging is active. The GivEnergy app and portal automatically enable the limit when you configure a value below 100%, and disable the limit when you set the limit to 100%. The "Enable timed charging" service also automatically handles this for you.
 
 ### Battery Eco (a.k.a Dynamic) mode
 
@@ -104,6 +109,7 @@ Charging settings work completely independently of the discharging settings; cha
 Activating this mode is equivalent to configuring the following individual options:
 * Set `switch.battery_ac_charging` to `on`.
 * Set `number.battery_ac_charge_limit`.
+* Set `switch.battery_ac_charge_limit` to `on` when the limit is < 100%, otherwise `off`.
 * Set the first battery charge slot.
 
 To turn this off, set `switch.battery_ac_charging` to `off`.
