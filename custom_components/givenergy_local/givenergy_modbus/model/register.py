@@ -4,7 +4,10 @@ from json import JSONEncoder
 import math
 from typing import Any, Callable, Optional, Union
 
-from pydantic.v1.utils import GetterDict
+try:
+    from pydantic.v1.utils import GetterDict
+except ImportError:
+    from pydantic.utils import GetterDict
 from custom_components.givenergy_local.givenergy_modbus.exceptions import (
     ConversionError,
 )
