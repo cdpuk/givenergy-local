@@ -12,7 +12,7 @@
   "issue_tracker": "https://github.com/cdpuk/givenergy-local/issues",
   "requirements": [
     "crccheck~=1.3",
-    "pydantic>=1.10.12,<2"
+    "pydantic"
   ],
   "version": "0.0.1"
 }

@@ -7,7 +7,7 @@ from datetime import time
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 
 if TYPE_CHECKING:
     from custom_components.givenergy_local.givenergy_modbus.model.register_cache import (

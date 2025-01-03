@@ -1,7 +1,7 @@
 from enum import IntEnum, StrEnum
 import math
 
-from pydantic import BaseConfig, create_model
+from pydantic.v1 import BaseConfig, create_model
 
 from custom_components.givenergy_local.givenergy_modbus.model.register import HR, IR
 from custom_components.givenergy_local.givenergy_modbus.model.register import (
