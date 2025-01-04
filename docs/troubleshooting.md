@@ -33,6 +33,18 @@ Logs may sometimes indicate CRC errors in data received from the inverter. This 
 
 The volume of these errors typically increases when the inverter is being queried from multiple locations at the same time, e.g. by running both this integration and GivTCP.
 
+## Warning about values not strictly increasing
+
+You may see warnings in your Home Assistant logs such as:
+
+```log
+Entity sensor.consumption_today from integration givenergy_local has state class total_increasing, but its state is not strictly increasing.
+```
+
+This is a known issue and is caused by the GivEnergy firmware decrementing a value in a way that shouldn't be possible. For example, you would expect your consumption figure in kWh to increase over the course of a day, however it's relatively common to this this drop by 0.1 at a random point during the day.
+
+This is considered a bug in the GivEnergy firmware and won't be fixed in the integration.
+
 ## Timeslots with invalid values
 
 If you can't connect at all and your logs mention failure to convert charge/discharge slot values, you may find that these values are not correctly set on the inverter.
