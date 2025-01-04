@@ -39,6 +39,16 @@ If you can't connect at all and your logs mention failure to convert charge/disc
 
 To see all available slots, you must log in to the GivEnergy web portal (see above). If any of the start/end times are blank, update these with a value, even if it's just to set the start and end times to the same value.
 
+## Errors after a new year
+
+GivEnergy firmware has been observed to poorly handle the new year transition, which may result in an error message such as:
+
+```log
+Failed to convert system_time from [25, 13, 1, 6, 45, 40]: month must be in 1..12
+```
+
+The inverter firmware appears to incorrectly increment the month from 12 to 13, which results in an invalid date. To fix this, visit the GivEnergy Portal and manually correct the date.
+
 ## Low level debug
 
 If you're struggling to get data out of your inverter, you may need to resort to [low-level debugging](debug.md) to understand how the data is structured.
