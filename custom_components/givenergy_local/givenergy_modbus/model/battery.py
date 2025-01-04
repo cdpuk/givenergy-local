@@ -1,6 +1,9 @@
 from enum import IntEnum
 
-from pydantic import BaseConfig, create_model
+try:
+    from pydantic.v1 import BaseConfig, create_model
+except ImportError:
+    from pydantic import BaseConfig, create_model
 
 from custom_components.givenergy_local.givenergy_modbus.model.register import IR
 from custom_components.givenergy_local.givenergy_modbus.model.register import (
