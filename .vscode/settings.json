@@ -4,5 +4,6 @@
     },
     "terminal.integrated.env.linux": {
         "PYTHONPATH": "${workspaceRoot}"
-    }
+    },
+    "python.analysis.typeCheckingMode": "standard"
 }

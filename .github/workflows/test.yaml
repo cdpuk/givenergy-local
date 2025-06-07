@@ -1,37 +1,29 @@
 ---
-name: Pull actions
+name: Unit tests
 
 on:
   pull_request:
+  push:
+    branches: [master]
+  schedule:
+    - cron: "0 0 * * *"
 
 jobs:
-  validate:
-    runs-on: "ubuntu-latest"
-    name: Validate
-    steps:
-      - uses: "actions/checkout@v4"
-
-      - name: HACS validation
-        uses: "hacs/action@main"
-        with:
-          category: "integration"
-          ignore: brands
-
-      - name: Hassfest validation
-        uses: "home-assistant/actions/hassfest@master"
-
-  tests:
+  test:
     runs-on: "ubuntu-latest"
     name: Run tests
     steps:
       - name: Check out code from GitHub
-        uses: "actions/checkout@v4"
+        uses: actions/checkout@v4
+
       - name: Setup Python
-        uses: "actions/setup-python@v5"
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
+
       - name: Install requirements
         run: python3 -m pip install -r requirements.txt -r requirements_test.txt
+
       - name: Run tests
         run: |
           pytest \

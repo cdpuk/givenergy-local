@@ -18,6 +18,4 @@ export PYTHONPATH="${PYTHONPATH}:${PWD}/custom_components"
 
 # Start Home Assistant
 # debugpy logging, if required: --log-to debugpy
-python3 -Xfrozen_modules=off \
-    -m debugpy --listen localhost:5678 \
-    -m homeassistant --config "${PWD}/config"
+python3 -Xfrozen_modules=off -m homeassistant --config "${PWD}/config"
