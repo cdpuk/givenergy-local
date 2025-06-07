@@ -147,13 +147,13 @@ class InverterDebugger:
     def _pretty_print_registers(registers: list[int], base_register: int) -> None:
         registers_per_row = 10
 
-        print(f"    | {" | ".join(f"{i}   " for i in range(10))}")
+        print(f"    | {' | '.join(f'{i}   ' for i in range(10))}")
 
         for row in range(6):
             first_register = row * registers_per_row
             row_registers = registers[first_register : first_register + 10]
             print(
-                f"{row*registers_per_row + base_register:3} | {" | ".join(f"{reg:04x}" for reg in row_registers)}"
+                f"{row * registers_per_row + base_register:3} | {' | '.join(f'{reg:04x}' for reg in row_registers)}"
             )
 
 

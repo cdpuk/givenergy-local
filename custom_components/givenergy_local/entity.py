@@ -75,7 +75,7 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     @property
     def available(self) -> bool:
         """Return True if the inverter is online."""
-        return self.coordinator.last_update_success  # type: ignore[no-any-return]
+        return self.coordinator.last_update_success
 
     @property
     def inverter_model(self) -> Model:
@@ -131,12 +131,12 @@ class BatteryEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     def data(self) -> Battery:
         """Get battery data for the entity."""
         # TODO watch for disappearing batteries
-        return self.coordinator.data.batteries[self.battery_id]  # type: ignore[no-any-return]
+        return self.coordinator.data.batteries[self.battery_id]
 
     @property
     def available(self) -> bool:
         """Return True if the inverter is online."""
-        return self.coordinator.last_update_success  # type: ignore[no-any-return]
+        return self.coordinator.last_update_success
 
     @property
     def battery_model(self) -> str:

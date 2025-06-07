@@ -37,7 +37,7 @@ class GivEnergyConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle the initial step."""
         if user_input is None:
-            return self.async_show_form(  # type: ignore[no-any-return]
+            return self.async_show_form(
                 step_id="user", data_schema=STEP_USER_DATA_SCHEMA
             )
 
@@ -49,11 +49,11 @@ class GivEnergyConfigFlow(ConfigFlow, domain=DOMAIN):
             LOGGER.exception("Failed to validate inverter configuration")
             errors["base"] = "cannot_connect"
         else:
-            return self.async_create_entry(  # type: ignore[no-any-return]
+            return self.async_create_entry(
                 title=f"Solar Inverter (S/N {serial_no})", data=user_input
             )
 
-        return self.async_show_form(  # type: ignore[no-any-return]
+        return self.async_show_form(
             step_id="user",
             data_schema=self.add_suggested_values_to_schema(
                 STEP_USER_DATA_SCHEMA, user_input
