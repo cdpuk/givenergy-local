@@ -187,6 +187,7 @@ _BASIC_INVERTER_SENSORS = [
     SensorEntityDescription(
         key="battery_percent",
         name="Battery Percent",
+        state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
     ),
