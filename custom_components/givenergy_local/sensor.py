@@ -189,6 +189,7 @@ _BASIC_INVERTER_SENSORS = [
         key="battery_percent",
         name="Battery Percent",
         icon=Icon.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
     ),
