@@ -2,11 +2,11 @@
 exclude: ^custom_components/givenergy_local/givenergy_modbus
 repos:
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.7
+    rev: v1.7.8
     hooks:
       - id: actionlint
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.13
+    rev: v0.14.3
     hooks:
       - id: ruff-check
         args:
@@ -23,7 +23,7 @@ repos:
           - --quiet-level=2
         exclude_types: [csv, json]
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-executables-have-shebangs
         stages: [manual]
@@ -39,7 +39,7 @@ repos:
       - id: prettier
         stages: [manual]
   - repo: https://github.com/cdce8p/python-typing-update
-    rev: v0.7.2
+    rev: v0.7.3
     hooks:
       - id: python-typing-update
         stages: [manual]

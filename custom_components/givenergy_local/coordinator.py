@@ -7,9 +7,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+from .const import CONF_HOST
 from .givenergy_modbus.client.client import Client
 from .givenergy_modbus.exceptions import CommunicationError, ConversionError
 from .givenergy_modbus.model.plant import Plant
@@ -66,17 +68,18 @@ _INVERTER_QUALITY_CHECKS = [
 class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
     """Update coordinator that fetches data from a GivEnergy inverter."""
 
-    def __init__(self, hass: HomeAssistant, host: str) -> None:
+    def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
         """Initialize my coordinator."""
         super().__init__(
             hass,
             _LOGGER,
+            config_entry=config_entry,
             name="Inverter",
             update_interval=timedelta(seconds=10),
         )
 
-        self.host = host
-        self.client = Client(host, 8899)
+        self.host = str(config_entry.data.get(CONF_HOST))
+        self.client = Client(self.host, 8899)
         self.require_full_refresh = True
         self.last_full_refresh = datetime.min
 
