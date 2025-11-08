@@ -73,7 +73,9 @@ class BatteryRegisterGetter(RegisterGetter):
         "cap_design2": Def(DT.uint32, DT.centi, IR(101), IR(102)),
         "t_max": Def(DT.deci, None, IR(103)),
         "t_min": Def(DT.deci, None, IR(104)),
-        # IR(105-109) unused
+        "e_discharge_total": Def(DT.deci, None, IR(105)),
+        "e_charge_total": Def(DT.deci, None, IR(106)),
+        # IR(107-109) unused
         "serial_number": Def(
             DT.string, None, IR(110), IR(111), IR(112), IR(113), IR(114)
         ),

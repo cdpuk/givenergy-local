@@ -21,6 +21,7 @@ from .coordinator import GivEnergyUpdateCoordinator
 _BATTERY_CAPACITY_TO_MODEL = {
     51: "Giv-Bat-ECO 2.6",
     102: "Giv-Bat 5.2",
+    106: "Giv-Bat 5.12",
     160: "Giv-Bat 8.2",
     186: "Giv-Bat 9.5",
 }
@@ -64,6 +65,7 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
             model=model_description,
             manufacturer=MANUFACTURER,
             sw_version=self.data.firmware_version,
+            serial_number=self.data.serial_number,
             configuration_url="https://givenergy.cloud",
         )
 
@@ -123,6 +125,7 @@ class BatteryEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
             manufacturer=MANUFACTURER,
             model=self.battery_model,
             sw_version=str(self.data.bms_firmware_version),
+            serial_number=self.data.serial_number,
             configuration_url="https://givenergy.cloud",
             via_device=(DOMAIN, self.coordinator.data.inverter.serial_number),
         )
