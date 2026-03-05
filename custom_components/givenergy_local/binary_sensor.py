@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, time, timedelta
 
-from typing import Any, Mapping
+from typing import Any, Mapping, cast
 
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
@@ -151,8 +151,14 @@ class InverterChargeSlotBinarySensor(InverterEntity, BinarySensorEntity):
     @property
     def slot(self) -> TimeSlot | None:
         """Get the slot definition."""
-        slot: TimeSlot = self.data.dict().get(self.entity_description.key)
-        return slot
+        slot = getattr(self.data, self.entity_description.key, None)
+        if slot is None:
+            return None
+        if isinstance(slot, dict):
+            return TimeSlot(start=slot["start"], end=slot["end"])
+        if isinstance(slot, (list, tuple)) and len(slot) == 2:
+            return TimeSlot(start=slot[0], end=slot[1])
+        return cast(TimeSlot, slot)
 
     @property
     def is_on(self) -> bool | None:

@@ -1,6 +1,8 @@
 import logging
 from typing import Any
 
+from pydantic import ConfigDict
+
 from custom_components.givenergy_local.givenergy_modbus.model import GivEnergyBaseModel
 from custom_components.givenergy_local.givenergy_modbus.model.battery import Battery
 from custom_components.givenergy_local.givenergy_modbus.model.inverter import Inverter
@@ -29,9 +31,7 @@ class Plant(GivEnergyBaseModel):
     data_adapter_serial_number: str = ""
     number_batteries: int = 0
 
-    class Config:  # noqa: D106
-        allow_mutation = True
-        frozen = False
+    model_config = ConfigDict(frozen=False, arbitrary_types_allowed=True)
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
@@ -91,7 +91,7 @@ class Plant(GivEnergyBaseModel):
         i = 0
         for i in range(6):
             try:
-                assert Battery.from_orm(self.register_caches[i + 0x32]).is_valid()
+                assert Battery.from_registers(self.register_caches[i + 0x32]).is_valid()
             except (KeyError, AssertionError):
                 break
         self.number_batteries = i
@@ -99,12 +99,12 @@ class Plant(GivEnergyBaseModel):
     @property
     def inverter(self) -> Inverter:
         """Return Inverter model for the Plant."""
-        return Inverter.from_orm(self.register_caches[0x32])
+        return Inverter.from_registers(self.register_caches[0x32])
 
     @property
     def batteries(self) -> list[Battery]:
         """Return Battery models for the Plant."""
         return [
-            Battery.from_orm(self.register_caches[i + 0x32])
+            Battery.from_registers(self.register_caches[i + 0x32])
             for i in range(self.number_batteries)
         ]

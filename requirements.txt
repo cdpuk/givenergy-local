@@ -1,6 +1,6 @@
 crccheck~=1.3
 
-pydantic
+pydantic>=2
 
 # Don't pin the HA version
 homeassistant

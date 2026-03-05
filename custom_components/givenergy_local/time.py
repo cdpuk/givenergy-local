@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import time
 
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, cast
 
 from homeassistant.components.time import TimeEntity, TimeEntityDescription
 from homeassistant.config_entries import ConfigEntry
@@ -98,10 +98,21 @@ class InverterTimeslotSensor(InverterEntity, TimeEntity):
         self._attr_unique_id = f"{self.data.serial_number}_{entity_description.key}"
         self.entity_description = entity_description
 
+    def _get_slot(self) -> TimeSlot | None:
+        """Get the timeslot, handling dict/list from model_dump or mocks."""
+        slot = getattr(self.data, self.entity_description.ge_modbus_key, None)
+        if slot is None:
+            return None
+        if isinstance(slot, dict):
+            return TimeSlot(start=slot["start"], end=slot["end"])
+        if isinstance(slot, (list, tuple)) and len(slot) == 2:
+            return TimeSlot(start=slot[0], end=slot[1])
+        return cast(TimeSlot, slot)
+
     @property
     def native_value(self) -> time | None:
         """Return the register value as referenced by the 'key' property of the associated entity description."""
-        if slot := self.data.dict().get(self.entity_description.ge_modbus_key):
+        if slot := self._get_slot():
             return self.entity_description.get_fn(slot)
         return None
 

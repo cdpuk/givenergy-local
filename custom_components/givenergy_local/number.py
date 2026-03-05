@@ -59,7 +59,7 @@ class InverterBasicNumber(InverterEntity, NumberEntity):
         This returns the register value as referenced by the 'key' property of
         the associated entity description.
         """
-        return self.data.dict().get(self.entity_description.key)  # type: ignore[no-any-return]
+        return self.data.model_dump().get(self.entity_description.key)  # type: ignore[no-any-return]
 
 
 class ACChargeLimitNumber(InverterBasicNumber):
@@ -200,7 +200,7 @@ class InverterBatteryPowerLimitNumber(InverterBasicNumber):
     @property
     def native_value(self) -> float | None:
         """Get the current value in Watts."""
-        raw_value = self.data.dict().get(self.entity_description.key)
+        raw_value = self.data.model_dump().get(self.entity_description.key)
         power_watts = int(raw_value * self.battery_power_step)
         return min(power_watts, self.inverter_max_battery_power)
 
