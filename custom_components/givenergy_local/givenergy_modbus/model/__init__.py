@@ -7,10 +7,7 @@ from datetime import time
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-try:
-    from pydantic.v1 import BaseModel
-except ImportError:
-    from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
     from custom_components.givenergy_local.givenergy_modbus.model.register_cache import (
@@ -21,11 +18,11 @@ if TYPE_CHECKING:
 class GivEnergyBaseModel(BaseModel):
     """Structured format for all other attributes."""
 
-    class Config:  # noqa: D106
-        allow_mutation = False
-        frozen = True
-        use_enum_values = True
-        orm_mode = True
+    model_config = ConfigDict(
+        frozen=True,
+        use_enum_values=True,
+        from_attributes=True,
+    )
 
     @classmethod
     def from_registers(cls, register_cache: RegisterCache):

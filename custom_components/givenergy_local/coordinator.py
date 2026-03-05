@@ -174,7 +174,7 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
             return False
 
         for check in _INVERTER_QUALITY_CHECKS:
-            value = inverter_data.dict().get(check.attr_name)
+            value = inverter_data.model_dump().get(check.attr_name)
             too_low = False
             too_high = False
 

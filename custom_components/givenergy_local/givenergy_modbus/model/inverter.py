@@ -1,10 +1,8 @@
 from enum import IntEnum, StrEnum
 import math
+from typing import TYPE_CHECKING
 
-try:
-    from pydantic.v1 import BaseConfig, create_model
-except ImportError:
-    from pydantic import BaseConfig, create_model
+from pydantic import ConfigDict, create_model
 
 from custom_components.givenergy_local.givenergy_modbus.model.register import HR, IR
 from custom_components.givenergy_local.givenergy_modbus.model.register import (
@@ -16,6 +14,11 @@ from custom_components.givenergy_local.givenergy_modbus.model.register import (
 from custom_components.givenergy_local.givenergy_modbus.model.register import (
     RegisterGetter,
 )
+
+if TYPE_CHECKING:
+    from custom_components.givenergy_local.givenergy_modbus.model.register_cache import (
+        RegisterCache,
+    )
 
 
 class Model(StrEnum):
@@ -325,13 +328,17 @@ class InverterRegisterGetter(RegisterGetter):
     #     return e_pv1_day + e_pv2_day
 
 
-class InverterConfig(BaseConfig):
-    """Pydantic configuration for the Inverter class."""
-
-    orm_mode = True
-    getter_dict = InverterRegisterGetter
-
-
-Inverter = create_model(
-    "Inverter", __config__=InverterConfig, **InverterRegisterGetter.to_fields()
+_InverterBase = create_model(
+    "Inverter",
+    __config__=ConfigDict(),
+    **InverterRegisterGetter.to_fields(),
 )  # type: ignore[call-overload]
+
+
+class Inverter(_InverterBase):  # type: ignore[misc,valid-type]
+    """Inverter model with from_registers factory."""
+
+    @classmethod
+    def from_registers(cls, register_cache: "RegisterCache") -> "Inverter":
+        """Build Inverter from register cache."""
+        return cls.model_validate(InverterRegisterGetter(register_cache).to_dict())

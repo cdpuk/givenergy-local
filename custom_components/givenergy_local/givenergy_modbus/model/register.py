@@ -1,18 +1,19 @@
+import builtins
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime as datetime_type
 from json import JSONEncoder
-import math
-from typing import Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
-try:
-    from pydantic.v1.utils import GetterDict
-except ImportError:
-    from pydantic.utils import GetterDict
 from custom_components.givenergy_local.givenergy_modbus.exceptions import (
     ConversionError,
 )
 
 from custom_components.givenergy_local.givenergy_modbus.model import TimeSlot
+
+if TYPE_CHECKING:
+    from custom_components.givenergy_local.givenergy_modbus.model.register_cache import (
+        RegisterCache,
+    )
 
 
 class Converter:
@@ -61,7 +62,7 @@ class Converter:
             return TimeSlot.from_repr(start_time, end_time)
 
     @staticmethod
-    def bool(val: int | None) -> bool | None:
+    def bool(val: int | None) -> builtins.bool | None:
         """Interpret register as a bool."""
         if val is not None:
             return bool(val)
@@ -134,10 +135,10 @@ class Converter:
             return val / 10
 
     @staticmethod
-    def datetime(year, month, day, hour, min, sec) -> Optional[datetime]:
+    def datetime(year, month, day, hour, min, sec) -> Optional[datetime_type]:
         """Compose a datetime from 6 registers."""
         if None not in [year, month, day, hour, min, sec]:
-            return datetime(year + 2000, month, day, hour, min, sec)
+            return datetime_type(year + 2000, month, day, hour, min, sec)
         return None
 
 
@@ -158,10 +159,14 @@ class RegisterDefinition:
         return hash(self.registers)
 
 
-class RegisterGetter(GetterDict):
+class RegisterGetter:
     """Specifies how device attributes are derived from raw register values."""
 
     REGISTER_LUT: dict[str, RegisterDefinition]
+
+    def __init__(self, register_cache: "RegisterCache") -> None:
+        """Store the register cache for value extraction."""
+        self._obj = register_cache
 
     def get(self, key: str, default: Any = None) -> Any:
         """Return a named register's value, after pre- and post-conversion."""
@@ -196,16 +201,25 @@ class RegisterGetter(GetterDict):
         except ValueError as err:
             raise ConversionError(key, regs, str(err)) from err
 
+    def to_dict(self) -> dict[str, Any]:
+        """Build dict suitable for model_validate()."""
+        return {k: self.get(k) for k in self.REGISTER_LUT}
+
     @classmethod
     def to_fields(cls) -> dict[str, tuple[Any, None]]:
         """Determine a pydantic fields definition for the class."""
 
         def infer_return_type(obj: Any):
-            if hasattr(obj, "__annotations__") and (
-                ret := obj.__annotations__.get("return", None)
+            # Unwrap staticmethod/classmethod to get underlying function for annotations
+            func = getattr(obj, "__func__", obj)
+            if hasattr(func, "__annotations__") and (
+                ret := func.__annotations__.get("return", None)
             ):
                 return ret
-            return obj  # assume it is a class/type already?
+            # Only return obj if it's a type (e.g. IntEnum), not a callable
+            if isinstance(obj, type):
+                return obj
+            return Any
 
         def return_type(v: RegisterDefinition):
             if v.post_conv:
@@ -221,7 +235,7 @@ class RegisterGetter(GetterDict):
             return Any
 
         register_fields = {
-            k: (return_type(v), None) for k, v in cls.REGISTER_LUT.items()
+            k: (Optional[return_type(v)], None) for k, v in cls.REGISTER_LUT.items()
         }
 
         return register_fields

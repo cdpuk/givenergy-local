@@ -408,7 +408,7 @@ class InverterBasicSensor(InverterEntity, SensorEntity):
     @property
     def native_value(self) -> StateType:
         """Return the register value as referenced by the 'key' property of the associated entity description."""
-        return self.data.dict().get(self.entity_description.key)  # type: ignore[no-any-return]
+        return self.data.model_dump().get(self.entity_description.key)  # type: ignore[no-any-return]
 
 
 class PVEnergyTodaySensor(InverterBasicSensor):
@@ -521,7 +521,7 @@ class BatteryBasicSensor(BatteryEntity, SensorEntity):
     @property
     def native_value(self) -> StateType:
         """Get the register value whose name matches the entity key."""
-        return self.data.dict().get(self.entity_description.ge_modbus_key)  # type: ignore[no-any-return]
+        return self.data.model_dump().get(self.entity_description.ge_modbus_key)  # type: ignore[no-any-return]
 
 
 class BatteryRemainingCapacitySensor(BatteryBasicSensor):
@@ -545,6 +545,6 @@ class BatteryCellsVoltageSensor(BatteryBasicSensor):
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
         """Expose individual cell voltages."""
         num_cells = self.data.num_cells
-        return self.data.dict(  # type: ignore[no-any-return]
+        return self.data.model_dump(  # type: ignore[no-any-return]
             include={f"v_cell_{i:02d}" for i in range(1, num_cells + 1)}
         )

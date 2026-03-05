@@ -68,14 +68,44 @@ def mock_plant_fixture():
         inverter.battery_charge_limit = 50
         inverter.battery_discharge_limit = 50
 
-        inverter.dict = MagicMock()
-        inverter.dict.return_value = inverter.__dict__
+        inverter.model_dump = MagicMock(
+            return_value={
+                "serial_number": "SD12345678",
+                "model": "Mock Inverter",
+                "firmware_version": "MOCK",
+                "temp_inverter_heatsink": 30,
+                "temp_battery": 20,
+                "e_inverter_out_total": 1234,
+                "charge_slot_1": [time(0), time(1)],
+                "charge_slot_2": [time(2), time(3)],
+                "discharge_slot_1": [time(16), time(17)],
+                "discharge_slot_2": [time(18), time(19)],
+                "battery_charge_limit": 50,
+                "battery_discharge_limit": 50,
+            }
+        )
 
         battery1 = MagicMock()
-        battery1.battery_serial_number = "BAT01"
+        battery1.serial_number = "BAT01"
+        battery1.num_cells = 16
+        battery1.model_dump = MagicMock(
+            return_value={
+                "serial_number": "BAT01",
+                "num_cells": 16,
+                **{f"v_cell_{i:02d}": 3.2 for i in range(1, 17)},
+            }
+        )
 
         battery2 = MagicMock()
-        battery2.battery_serial_number = "BAT02"
+        battery2.serial_number = "BAT02"
+        battery2.num_cells = 16
+        battery2.model_dump = MagicMock(
+            return_value={
+                "serial_number": "BAT02",
+                "num_cells": 16,
+                **{f"v_cell_{i:02d}": 3.2 for i in range(1, 17)},
+            }
+        )
 
         plant_instance = mock_ge_plant.return_value
         plant_instance.inverter = inverter
