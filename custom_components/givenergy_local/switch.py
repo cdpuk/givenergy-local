@@ -93,7 +93,7 @@ class InverterSwitch(InverterEntity, SwitchEntity):
     @property
     def is_on(self) -> bool | None:
         """Return the register value as referenced by the 'key' property of the associated entity description."""
-        if (val := self.data.dict().get(self.entity_description.key)) is not None:
+        if (val := self.data.model_dump().get(self.entity_description.key)) is not None:
             return val  # type: ignore[no-any-return]
         return None
 

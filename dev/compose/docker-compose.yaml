@@ -1,0 +1,20 @@
+name: givenergy-local
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: givenergy-local-homeassistant
+    restart: unless-stopped
+    ports:
+      - "9123:8123"
+    volumes:
+      # Home Assistant config
+      - homeassistant_config:/config
+      # Our integration custom component files
+      - ../../custom_components/givenergy_local:/config/custom_components/givenergy_local
+    environment:
+      - TZ=Europe/London
+
+
+volumes:
+  homeassistant_config:
