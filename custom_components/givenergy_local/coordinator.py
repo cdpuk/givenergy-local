@@ -130,6 +130,12 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                 _LOGGER.debug("Closing connection due to communication error: %s", err)
                 await self.client.close()
                 raise UpdateFailed() from err
+            except TimeoutError as err:
+                _LOGGER.warning("Timeout error, restarting connection")
+                await self.client.close()
+                await asyncio.sleep(_REFRESH_DELAY_BETWEEN_ATTEMPTS)
+                await self.client.connect()
+                continue
             except Exception as err:
                 _LOGGER.error("Closing connection due to expected error: %s", err)
                 await self.client.close()

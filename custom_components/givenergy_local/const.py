@@ -19,7 +19,9 @@ class Icon(StrEnum):
 
     PV = "mdi:solar-power"
     AC = "mdi:power-plug-outline"
+    DC = "mdi:current-dc"
     BATTERY = "mdi:battery-high"
+    BATTERY_CHARGING = "mdi:battery-charging"
     BATTERY_CYCLES = "mdi:battery-sync"
     BATTERY_TEMPERATURE = "mdi:thermometer"
     BATTERY_MINUS = "mdi:battery-minus"
