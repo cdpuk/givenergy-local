@@ -123,8 +123,19 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                         full_refresh=self.require_full_refresh, retries=2
                     )
             except ValueError as err:
+                # We expect to hit this path when corrupt data is received and so fails decoding.
+                # Since CRC checking was added, hitting this is far less likely.
                 _LOGGER.warning("Plant refresh failed due to bad data: %s", err)
                 await asyncio.sleep(_REFRESH_DELAY_BETWEEN_ATTEMPTS)
+                continue
+            except TimeoutError:
+                # For some inverters/environments, frequent timeout errors occur.
+                # In such cases, a retry using the same connection is often unsuccessful.
+                # To prevent 'unavailable' data in HA, we attempt a full reconnect here.
+                _LOGGER.warning("Plant refresh timed out")
+                await self.client.close()
+                await asyncio.sleep(_REFRESH_DELAY_BETWEEN_ATTEMPTS)
+                await self.client.connect()
                 continue
             except CommunicationError as err:
                 _LOGGER.debug("Closing connection due to communication error: %s", err)
