@@ -21,6 +21,7 @@ from .coordinator import GivEnergyUpdateCoordinator
 _BATTERY_CAPACITY_TO_MODEL = {
     51: "Giv-Bat-ECO 2.6",
     102: "Giv-Bat 5.2",
+    106: "Giv-Bat 5.12",
     160: "Giv-Bat 8.2",
     186: "Giv-Bat 9.5",
 }
