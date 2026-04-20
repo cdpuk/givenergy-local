@@ -64,6 +64,7 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
             name="Solar Inverter",
             model=model_description,
             manufacturer=MANUFACTURER,
+            serial_number=self.data.serial_number,
             sw_version=self.data.firmware_version,
             configuration_url="https://givenergy.cloud",
         )
@@ -123,6 +124,7 @@ class BatteryEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
             name="Battery",
             manufacturer=MANUFACTURER,
             model=self.battery_model,
+            serial_number=self.data.serial_number,
             sw_version=str(self.data.bms_firmware_version),
             configuration_url="https://givenergy.cloud",
             via_device=(DOMAIN, self.coordinator.data.inverter.serial_number),
