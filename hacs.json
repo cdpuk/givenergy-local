@@ -1,6 +1,6 @@
 {
     "name": "GivEnergy Local",
     "hacs": "1.6.0",
-    "homeassistant": "2023.10.0",
+    "homeassistant": "2024.12",
     "render_readme": true
 }
