@@ -299,6 +299,14 @@ _BASIC_BATTERY_SENSORS = [
         ge_modbus_key="v_out",
     ),
     MappedSensorEntityDescription(
+        key="battery_temperature",
+        name="Battery Temperature",
+        icon=Icon.BATTERY_TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        ge_modbus_key="t_bms_mosfet",
+    ),
+    MappedSensorEntityDescription(
         key="battery_e_discharge_total",
         name="Battery Discharge Total",
         icon=Icon.BATTERY_MINUS,
