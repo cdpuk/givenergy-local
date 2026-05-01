@@ -124,3 +124,15 @@ reboot_inverter:
       selector:
         device:
           integration: givenergy_local
+sync_clock:
+  name: Synchronise clock
+  description: >
+    Sets the inverter clock to the current time on the Home Assistant server.
+  fields:
+    device_id:
+      name: Device
+      description: Inverter to control
+      required: true
+      selector:
+        device:
+          integration: givenergy_local
