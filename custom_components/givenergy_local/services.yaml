@@ -112,3 +112,27 @@ disable_timed_charge:
       selector:
         device:
           integration: givenergy_local
+reboot_inverter:
+  name: Reboot inverter
+  description: >
+    Reboots the selected inverter.
+  fields:
+    device_id:
+      name: Device
+      description: Inverter to control
+      required: true
+      selector:
+        device:
+          integration: givenergy_local
+sync_clock:
+  name: Synchronise clock
+  description: >
+    Sets the inverter clock to the current time on the Home Assistant server.
+  fields:
+    device_id:
+      name: Device
+      description: Inverter to control
+      required: true
+      selector:
+        device:
+          integration: givenergy_local
