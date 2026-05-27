@@ -7,6 +7,7 @@ from typing import Any
 from homeassistant.const import ATTR_DEVICE_ID
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import device_registry as dr
+from homeassistant.util import dt as dt_util
 import voluptuous as vol
 
 from custom_components.givenergy_local.givenergy_modbus.pdu.transparent import (
@@ -231,5 +232,5 @@ async def _async_sync_clock(hass: HomeAssistant, data: dict[str, Any]) -> None:
     await _async_service_call(
         hass,
         data[ATTR_DEVICE_ID],
-        CommandBuilder.set_system_date_time(datetime.datetime.now()),
+        CommandBuilder.set_system_date_time(dt_util.now()),
     )
