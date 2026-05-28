@@ -1,11 +1,38 @@
 {
   "config": {
     "step": {
+      "user": {
+        "title": "Connect to inverter",
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "Enter the inverter hostname or IP address only, without http:// or a port."
+        }
+      },
+      "reconfigure": {
+        "title": "Update inverter connection",
+        "description": "Update the saved host for this inverter.",
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "Enter the new inverter hostname or IP address only, without http:// or a port."
+        }
+      },
       "confirm": {
         "description": "[%key:common::config_flow::description::confirm_setup%]"
       }
     },
+    "error": {
+      "cannot_connect": "Failed to connect to the inverter.",
+      "invalid_host": "Enter a valid inverter hostname or IP address.",
+      "invalid_inverter": "The device responded, but it did not behave like a supported GivEnergy inverter."
+    },
     "abort": {
+      "already_configured": "This inverter is already configured.",
+      "different_inverter": "The new host belongs to a different inverter. Use the original inverter host for this entry.",
+      "reconfigure_successful": "The inverter connection settings were updated.",
       "single_instance_allowed": "[%key:common::config_flow::abort::single_instance_allowed%]",
       "no_devices_found": "[%key:common::config_flow::abort::no_devices_found%]"
     }
