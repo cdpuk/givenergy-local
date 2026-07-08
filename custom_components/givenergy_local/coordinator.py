@@ -11,11 +11,16 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+from givenergy_modbus.client.client import Client
+from givenergy_modbus.exceptions import (
+    CommunicationError,
+    RefreshFailed,
+    RefreshPartiallySucceeded,
+)
+from givenergy_modbus.model.plant import Plant
+from givenergy_modbus.pdu.transparent import TransparentRequest
+
 from .const import CONF_HOST
-from .givenergy_modbus.client.client import Client
-from .givenergy_modbus.exceptions import CommunicationError, ConversionError
-from .givenergy_modbus.model.plant import Plant
-from .givenergy_modbus.pdu.transparent import TransparentRequest
 
 _LOGGER = getLogger(__name__)
 _FULL_REFRESH_INTERVAL = timedelta(minutes=5)
@@ -52,14 +57,14 @@ class QualityCheck:
 
 QC = QualityCheck
 _INVERTER_QUALITY_CHECKS = [
-    QC("temp_inverter_heatsink", -10, 100),
-    QC("temp_charger", -10, 100),
-    QC("temp_battery", -10, 100),
-    QC("e_inverter_out_total", 0, 1e6, min_inclusive=False),  # 1GWh
+    QC("t_inverter_heatsink", -10, 100),
+    QC("t_charger", -10, 100),
+    QC("t_battery", -10, 100),
+    QC("e_pv_generation_total", 0, 1e6, min_inclusive=False),  # 1GWh
     QC("e_grid_in_total", 0, 1e6, min_inclusive=False),  # 1GWh
     QC("e_grid_out_total", 0, 1e6, min_inclusive=False),  # 1GWh
-    QC("battery_percent", 0, 100),
-    QC("p_eps_backup", -15e3, 15e3),  # +/- 15kW
+    QC("battery_soc", 0, 100),
+    QC("p_backup", -15e3, 15e3),  # +/- 15kW
     QC("p_grid_out", -1e6, 15e3),  # 15kW export, 1MW import
     QC("p_battery", -15e3, 15e3),  # +/- 15kW
 ]
@@ -81,7 +86,7 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         self.host = str(config_entry.data.get(CONF_HOST))
         self.client = Client(self.host, 8899)
         self.require_full_refresh = True
-        self.last_full_refresh = datetime.min
+        self.last_full_refresh = datetime.min.replace(tzinfo=UTC)
 
     async def async_shutdown(self) -> None:
         """Terminate the modbus connection and shut down the coordinator."""
@@ -93,11 +98,11 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         """Fetch data from the inverter."""
         if not self.client.connected:
             await self.client.connect()
-            await self.client.detect_plant()
-            self.require_full_refresh = False
-            self.last_full_refresh = datetime.now(UTC)
-            # Detection performs a full refresh - no need to trigger another one now
-            return self.client.plant
+            # Discover device type and topology. This populates plant.capabilities,
+            # which the config/measurement reads below rely on. A freshly detected
+            # plant has no register data yet, so force a full refresh this cycle.
+            await self.client.detect()
+            self.require_full_refresh = True
 
         if self.last_full_refresh < (datetime.now(UTC) - _FULL_REFRESH_INTERVAL):
             self.require_full_refresh = True
@@ -119,9 +124,18 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                         _REFRESH_ATTEMPTS,
                         self.require_full_refresh,
                     )
-                    plant = await self.client.refresh_plant(
-                        full_refresh=self.require_full_refresh, retries=2
-                    )
+                    # A full refresh re-reads the holding-register config blocks
+                    # (settings, slots, etc.); every poll re-reads the input-register
+                    # measurement blocks.
+                    if self.require_full_refresh:
+                        await self.client.load_config(retries=2)
+                    plant = await self.client.refresh(retries=2)
+            except RefreshPartiallySucceeded as err:
+                # Some device blocks couldn't be read, but the library still
+                # returns a plant with whatever data did arrive. Keep it and let the
+                # quality checks below decide whether it's good enough to publish.
+                _LOGGER.warning("Plant refresh partially succeeded: %s", err)
+                plant = err.plant
             except ValueError as err:
                 # We expect to hit this path when corrupt data is received and so fails decoding.
                 # Since CRC checking was added, hitting this is far less likely.
@@ -136,6 +150,14 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                 await self.client.close()
                 await asyncio.sleep(_REFRESH_DELAY_BETWEEN_ATTEMPTS)
                 await self.client.connect()
+                await self.client.detect()
+                self.require_full_refresh = True
+                continue
+            except RefreshFailed as err:
+                # The library couldn't read any usable data this cycle. Retry a few
+                # times before giving up and marking the data unavailable.
+                _LOGGER.warning("Plant refresh failed: %s", err)
+                await asyncio.sleep(_REFRESH_DELAY_BETWEEN_ATTEMPTS)
                 continue
             except CommunicationError as err:
                 _LOGGER.debug("Closing connection due to communication error: %s", err)
@@ -153,6 +175,9 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
             if self.require_full_refresh:
                 self.require_full_refresh = False
                 self.last_full_refresh = datetime.now(UTC)
+            _LOGGER.info(
+                f"Current time: {plant.inverter.model_dump().get('system_time')}"
+            )
             return plant
 
         raise UpdateFailed(
@@ -172,13 +197,10 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
             inverter_data = plant.inverter
             _ = plant.batteries
 
-        except ConversionError as err:
-            _LOGGER.warning(
-                "Failed to convert %s from %s: %s",
-                err.key,
-                err.source_registers,
-                err.message,
-            )
+        except (ValueError, KeyError) as err:
+            # A register held a value outside the expected range (e.g. an unknown
+            # enum value), or an expected register block hasn't been read yet.
+            _LOGGER.warning("Failed to decode register data: %s", err)
             return False
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.warning("Unexpected register validation error: %s", err)

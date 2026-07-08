@@ -9,8 +9,9 @@ from typing import Any
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 import voluptuous as vol
 
+from givenergy_modbus.client.client import Client
+
 from .const import CONF_HOST, DOMAIN, LOGGER
-from .givenergy_modbus.client.client import Client
 
 STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
 
@@ -20,7 +21,10 @@ async def read_inverter_serial(data: dict[str, Any]) -> str:
     client = Client(data[CONF_HOST], 8899)
     async with asyncio.timeout(10):
         await client.connect()
-        await client.detect_plant()
+        # detect() resolves the device topology; load_config() then reads the
+        # holding-register identity bank that carries the serial number.
+        await client.detect()
+        await client.load_config()
         await client.close()
 
     serial_no: str = client.plant.inverter.serial_number

@@ -10,10 +10,13 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from givenergy_modbus.client import commands as ge_commands
+from givenergy_modbus.client.commands import RegisterMap
+from givenergy_modbus.pdu.write_registers import WriteHoldingRegisterRequest
+
 from .const import DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import InverterEntity
-from .givenergy_modbus.client.commands import CommandBuilder
 
 
 @dataclass(frozen=True)
@@ -33,28 +36,33 @@ _GENERIC_ENTITIES = [
         key="enable_charge",
         name="Battery AC Charging",
         icon=Icon.BATTERY_PLUS,
-        set_fn=lambda c, v: c.execute(CommandBuilder.set_enable_charge(v)),
+        set_fn=lambda c, v: c.execute(ge_commands.set_enable_charge(v)),
     ),
     MappedSwitchEntityDescription(
         key="enable_charge_target",
         name="Battery AC Charge Limit",
         icon=Icon.BATTERY_PLUS,
-        set_fn=lambda c, v: c.execute(CommandBuilder.set_enable_charge_target(v)),
+        # The library no longer exposes a plain enable/disable for the charge-target
+        # bit (its set_charge_target_enabled() also writes the target SOC), so toggle
+        # the holding register directly to preserve the original behaviour.
+        set_fn=lambda c, v: c.execute(
+            [WriteHoldingRegisterRequest(RegisterMap.ENABLE_CHARGE_TARGET, int(v))]
+        ),
     ),
     MappedSwitchEntityDescription(
         key="enable_discharge",
         name="Battery DC Discharging",
         icon=Icon.BATTERY_MINUS,
-        set_fn=lambda c, v: c.execute(CommandBuilder.set_enable_discharge(v)),
+        set_fn=lambda c, v: c.execute(ge_commands.set_enable_discharge(v)),
     ),
     MappedSwitchEntityDescription(
         key="battery_power_mode",
         name="Battery Eco Mode",
         icon=Icon.BATTERY,
         set_fn=lambda c, v: c.execute(
-            CommandBuilder.set_discharge_mode_to_match_demand()
+            ge_commands.set_discharge_mode_to_match_demand()
             if v
-            else CommandBuilder.set_discharge_mode_max_power()
+            else ge_commands.set_discharge_mode_max_power()
         ),
     ),
 ]

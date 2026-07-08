@@ -12,11 +12,13 @@ from homeassistant.const import PERCENTAGE, UnitOfPower
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from givenergy_modbus.client import commands as ge_commands
+from givenergy_modbus.client.commands import RegisterMap
+from givenergy_modbus.pdu.write_registers import WriteHoldingRegisterRequest
+
 from .const import BATTERY_NOMINAL_VOLTAGE, DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import InverterEntity
-from .givenergy_modbus.client.commands import CommandBuilder, RegisterMap
-from .givenergy_modbus.pdu.write_registers import WriteHoldingRegisterRequest
 
 
 async def async_setup_entry(
@@ -132,9 +134,7 @@ class BatterySoCReserveNumber(InverterBasicNumber):
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value."""
-        await self.coordinator.execute(
-            CommandBuilder.set_battery_soc_reserve(int(value))
-        )
+        await self.coordinator.execute(ge_commands.set_battery_soc_reserve(int(value)))
 
 
 class BatteryMinPowerReserveNumber(InverterBasicNumber):
@@ -164,7 +164,7 @@ class BatteryMinPowerReserveNumber(InverterBasicNumber):
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value."""
         await self.coordinator.execute(
-            CommandBuilder.set_battery_power_reserve(int(value))
+            ge_commands.set_battery_power_reserve(int(value))
         )
 
 
@@ -183,7 +183,7 @@ class InverterBatteryPowerLimitNumber(InverterBasicNumber):
         # We need to calculate the maximum possible value based on inverter and battery
         # capabilities. We know packs are limited to 0.5C charge/discharge, so:
         battery_max_power = int(
-            self.data.battery_capacity * BATTERY_NOMINAL_VOLTAGE * 0.5
+            self.data.battery_capacity_ah * BATTERY_NOMINAL_VOLTAGE * 0.5
         )
 
         # Work out the maximum possible power
@@ -194,7 +194,7 @@ class InverterBatteryPowerLimitNumber(InverterBasicNumber):
         # To add confusion to the matter, the raw values used by the API need to be determined
         # from the battery capacity
         self.battery_power_step = (
-            self.data.battery_capacity * BATTERY_NOMINAL_VOLTAGE / 100
+            self.data.battery_capacity_ah * BATTERY_NOMINAL_VOLTAGE / 100
         )
 
     @property
@@ -242,9 +242,7 @@ class InverterBatteryChargeLimitNumber(InverterBatteryPowerLimitNumber):
     async def async_set_native_value(self, value: float) -> None:
         """Update the current charge power limit."""
         raw_value = self.watts_to_api_value(int(value))
-        await self.coordinator.execute(
-            CommandBuilder.set_battery_charge_limit(raw_value)
-        )
+        await self.coordinator.execute(ge_commands.set_battery_charge_limit(raw_value))
 
 
 class InverterBatteryDischargeLimitNumber(InverterBatteryPowerLimitNumber):
@@ -272,5 +270,5 @@ class InverterBatteryDischargeLimitNumber(InverterBatteryPowerLimitNumber):
         """Update the current discharge power limit."""
         raw_value = self.watts_to_api_value(int(value))
         await self.coordinator.execute(
-            CommandBuilder.set_battery_discharge_limit(raw_value)
+            ge_commands.set_battery_discharge_limit(raw_value)
         )

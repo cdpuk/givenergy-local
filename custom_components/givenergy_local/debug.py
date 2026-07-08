@@ -9,8 +9,8 @@ import sys
 from types import TracebackType
 from typing import Type
 
-from custom_components.givenergy_local.givenergy_modbus.client.client import Client
-from custom_components.givenergy_local.givenergy_modbus.pdu.read_registers import (
+from givenergy_modbus.client.client import Client
+from givenergy_modbus.pdu.read_registers import (
     ReadHoldingRegistersRequest,
     ReadInputRegistersRequest,
     ReadRegistersRequest,
@@ -105,7 +105,7 @@ class InverterDebugger:
                 print(
                     f"Read IR slave_address=0x{self.slave_address:02x}, base_register={base_register}"
                 )
-                req = ReadInputRegistersRequest(  # type: ignore[no-untyped-call]
+                req = ReadInputRegistersRequest(
                     slave_address=self.slave_address,
                     base_register=base_register,
                     register_count=60,
@@ -117,7 +117,7 @@ class InverterDebugger:
                 print(
                     f"Read HR slave_address=0x{self.slave_address:02x}, base_register={base_register}"
                 )
-                req = ReadHoldingRegistersRequest(  # type: ignore[no-untyped-call]
+                req = ReadHoldingRegistersRequest(
                     slave_address=self.slave_address,
                     base_register=base_register,
                     register_count=60,

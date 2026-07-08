@@ -42,9 +42,9 @@ If this happens, bear in mind the maintainers of this integration do not have ac
 
 ### givenergy_modbus
 
-The Modbus protocol implementation for GivEnergy systems was originally created by the [`givenergy-modbus`][givenergy-modbus] project. Huge thanks goes to the author and contributors for unpicking the non-standard low level technical details of the protocol.
+The Modbus protocol implementation for GivEnergy systems is provided by the [`givenergy-modbus`][givenergy-modbus] project. Huge thanks goes to the author and contributors for unpicking the non-standard low level technical details of the protocol.
 
-Since the project was paused, the current implementation of this integration uses an embedded forked version of the library so that further bugfixes and updates can be made without an external dependency.
+While that project was paused, this integration carried an embedded fork of the library so that bugfixes and compatibility updates could continue. Now that the upstream project is actively maintained again, the integration depends on the published `givenergy-modbus` package directly.
 
 ### GivTCP
 

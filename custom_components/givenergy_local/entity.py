@@ -4,17 +4,31 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from custom_components.givenergy_local.givenergy_modbus.model.inverter import (
-    Generation,
-    Model,
-)
-from custom_components.givenergy_local.givenergy_modbus.model.plant import (
-    Battery,
-    Inverter,
-)
+from givenergy_modbus.model.battery import Battery
+from givenergy_modbus.model.inverter import Generation, Model, SinglePhaseInverter
+from givenergy_modbus.model.inverter_threephase import ThreePhaseInverter
 
 from .const import DOMAIN, MANUFACTURER
 from .coordinator import GivEnergyUpdateCoordinator
+
+# Maps the century of the ARM firmware version to a hardware generation. The
+# upstream library exposes the Generation enum but no longer derives it on the
+# inverter model, so we reproduce the previous mapping here.
+_ARM_FW_CENTURY_TO_GENERATION = {
+    3: Generation.GEN3,
+    8: Generation.GEN2,
+    9: Generation.GEN2,
+}
+
+
+def _derive_generation(arm_firmware_version: int | None) -> Generation:
+    """Pick the hardware generation from the ARM firmware version."""
+    if arm_firmware_version is None:
+        return Generation.GEN1
+    return _ARM_FW_CENTURY_TO_GENERATION.get(
+        arm_firmware_version // 100, Generation.GEN1
+    )
+
 
 # Maps battery design capacities (as seen under 'cap_design2') to model names.
 # Keys should match the values seen in the datasheets.
@@ -53,11 +67,15 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
         """Inverter device information for the entity."""
 
         model: Model = self.data.model
-        model_name = _MODEL_DESCRIPTIONS[model]
+        model_name = _MODEL_DESCRIPTIONS.get(
+            model, model.name.replace("_", " ").title()
+        )
         power_description = ""
         if max_power := self.data.inverter_max_power:
             power_description = f"{max_power / 1000}kW"
-        model_description = f"{model_name} {self.data.generation} {power_description}"
+        model_description = (
+            f"{model_name} {self.inverter_generation} {power_description}"
+        )
 
         return DeviceInfo(
             identifiers={(DOMAIN, self.data.serial_number)},
@@ -70,7 +88,7 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
         )
 
     @property
-    def data(self) -> Inverter:
+    def data(self) -> SinglePhaseInverter | ThreePhaseInverter:
         """Get inverter data for the entity."""
         return self.coordinator.data.inverter
 
@@ -82,12 +100,17 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     @property
     def inverter_model(self) -> Model:
         """Get the inverter model."""
-        return self.data.model  # type: ignore[no-any-return]
+        return self.data.model
+
+    @property
+    def inverter_generation(self) -> Generation:
+        """Get the inverter hardware generation."""
+        return _derive_generation(self.data.arm_firmware_version)
 
     @property
     def inverter_max_battery_power(self) -> int:
         """Get the maximum battery charge/discharge power for this model."""
-        if self.data.generation == Generation.GEN1:
+        if self.inverter_generation == Generation.GEN1:
             if self.inverter_model == Model.AC:
                 return 3000
             if self.inverter_model == Model.ALL_IN_ONE:
