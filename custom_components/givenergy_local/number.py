@@ -16,7 +16,7 @@ from givenergy_modbus.client import commands as ge_commands
 from givenergy_modbus.client.commands import RegisterMap
 from givenergy_modbus.pdu.write_registers import WriteHoldingRegisterRequest
 
-from .const import BATTERY_NOMINAL_VOLTAGE, DOMAIN, Icon
+from .const import DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import InverterEntity
 
@@ -182,8 +182,9 @@ class InverterBatteryPowerLimitNumber(InverterBasicNumber):
 
         # We need to calculate the maximum possible value based on inverter and battery
         # capabilities. We know packs are limited to 0.5C charge/discharge, so:
+        battery_nominal_voltage = self.data.model.system_battery_voltage
         battery_max_power = int(
-            self.data.battery_capacity_ah * BATTERY_NOMINAL_VOLTAGE * 0.5
+            self.data.battery_capacity_ah * battery_nominal_voltage * 0.5
         )
 
         # Work out the maximum possible power
@@ -194,7 +195,7 @@ class InverterBatteryPowerLimitNumber(InverterBasicNumber):
         # To add confusion to the matter, the raw values used by the API need to be determined
         # from the battery capacity
         self.battery_power_step = (
-            self.data.battery_capacity_ah * BATTERY_NOMINAL_VOLTAGE / 100
+            self.data.battery_capacity_ah * battery_nominal_voltage / 100
         )
 
     @property
