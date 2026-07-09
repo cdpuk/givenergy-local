@@ -5,30 +5,11 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from givenergy_modbus.model.battery import Battery
-from givenergy_modbus.model.inverter import Generation, Model, SinglePhaseInverter
+from givenergy_modbus.model.inverter import Model, SinglePhaseInverter, resolve_model
 from givenergy_modbus.model.inverter_threephase import ThreePhaseInverter
 
 from .const import DOMAIN, MANUFACTURER
 from .coordinator import GivEnergyUpdateCoordinator
-
-# Maps the century of the ARM firmware version to a hardware generation. The
-# upstream library exposes the Generation enum but no longer derives it on the
-# inverter model, so we reproduce the previous mapping here.
-_ARM_FW_CENTURY_TO_GENERATION = {
-    3: Generation.GEN3,
-    8: Generation.GEN2,
-    9: Generation.GEN2,
-}
-
-
-def _derive_generation(arm_firmware_version: int | None) -> Generation:
-    """Pick the hardware generation from the ARM firmware version."""
-    if arm_firmware_version is None:
-        return Generation.GEN1
-    return _ARM_FW_CENTURY_TO_GENERATION.get(
-        arm_firmware_version // 100, Generation.GEN1
-    )
-
 
 # Maps battery design capacities (as seen under 'cap_design2') to model names.
 # Keys should match the values seen in the datasheets.
@@ -49,6 +30,15 @@ _MODEL_DESCRIPTIONS = {
     Model.EMS: "EMS",
     Model.GATEWAY: "Gateway",
     Model.ALL_IN_ONE: "All In One",
+    Model.HYBRID_GEN1: "Hybrid Gen1",
+    Model.HYBRID_GEN2: "Hybrid Gen2",
+    Model.HYBRID_GEN3: "Hybrid Gen3",
+    Model.POLAR: "Polar",
+    Model.AIO_COMMERCIAL: "All In One Commercial",
+    Model.EMS_COMMERCIAL: "EMS Commercial",
+    Model.HYBRID_HV_GEN3: "Hybrid HV Gen3",
+    Model.ALL_IN_ONE_HYBRID: "All In One Hybrid",
+    Model.HYBRID_GEN4: "Hybrid Gen4",
 }
 
 
@@ -66,16 +56,22 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     def device_info(self) -> DeviceInfo:
         """Inverter device information for the entity."""
 
-        model: Model = self.data.model
+        dtc = self.data.device_type_code
+        arm_fw = self.data.arm_firmware_version
+        # Resolve the specific model variant (e.g. HYBRID_GEN2) when possible;
+        # fall back to the coarse model if detection hasn't completed yet.
+        model = (
+            resolve_model(int(dtc, 16), int(arm_fw))
+            if dtc is not None and arm_fw is not None
+            else self.data.model
+        )
         model_name = _MODEL_DESCRIPTIONS.get(
             model, model.name.replace("_", " ").title()
         )
         power_description = ""
         if max_power := self.data.inverter_max_power:
             power_description = f"{max_power / 1000}kW"
-        model_description = (
-            f"{model_name} {self.inverter_generation} {power_description}"
-        )
+        model_description = f"{model_name} {power_description}".rstrip()
 
         return DeviceInfo(
             identifiers={(DOMAIN, self.data.serial_number)},
@@ -98,28 +94,14 @@ class InverterEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
         return self.coordinator.last_update_success
 
     @property
-    def inverter_model(self) -> Model:
-        """Get the inverter model."""
-        return self.data.model
-
-    @property
-    def inverter_generation(self) -> Generation:
-        """Get the inverter hardware generation."""
-        return _derive_generation(self.data.arm_firmware_version)
-
-    @property
     def inverter_max_battery_power(self) -> int:
         """Get the maximum battery charge/discharge power for this model."""
-        if self.inverter_generation == Generation.GEN1:
-            if self.inverter_model == Model.AC:
-                return 3000
-            if self.inverter_model == Model.ALL_IN_ONE:
-                return 6000
-            return 2600
+        battery_max_power: int | None = self.data.battery_max_power
+        if battery_max_power is not None:
+            return battery_max_power
 
-        if self.inverter_model == Model.AC:
-            return 5000
-        return 3600
+        # Fallback to a safe value (lowest possible rating of all models)
+        return 2600
 
 
 class BatteryEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):

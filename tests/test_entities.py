@@ -1,17 +1,15 @@
 """Unit tests for entity value mapping onto the givenergy-modbus library.
 
 These focus on the parts of the integration most exposed to upstream field renames:
-the sensor register lookup, the derived inverter generation, and the battery model
-lookup. They construct entities against a mocked coordinator, so no inverter (real or
-simulated) is contacted.
+the sensor register lookup and the battery model lookup. They construct entities
+against a mocked coordinator, so no inverter (real or simulated) is contacted.
 """
 
 from unittest.mock import MagicMock
 
-from givenergy_modbus.model.inverter import Generation, Model
-import pytest
+from givenergy_modbus.model.inverter import Model
 
-from custom_components.givenergy_local.entity import BatteryEntity, _derive_generation
+from custom_components.givenergy_local.entity import BatteryEntity
 from custom_components.givenergy_local.sensor import (
     InverterBasicSensor,
     MappedSensorEntityDescription,
@@ -24,22 +22,6 @@ def _coordinator_with_inverter(**model_dump: object) -> MagicMock:
     coordinator.data.inverter.serial_number = "SD12345678"
     coordinator.data.inverter.model_dump.return_value = dict(model_dump)
     return coordinator
-
-
-@pytest.mark.parametrize(
-    ("arm_firmware_version", "expected"),
-    [
-        (None, Generation.GEN1),
-        (100, Generation.GEN1),
-        (300, Generation.GEN3),
-        (312, Generation.GEN3),
-        (800, Generation.GEN2),
-        (905, Generation.GEN2),
-    ],
-)
-def test_derive_generation(arm_firmware_version, expected) -> None:
-    """The hardware generation is derived from the ARM firmware version century."""
-    assert _derive_generation(arm_firmware_version) is expected
 
 
 def test_inverter_sensor_prefers_ge_modbus_key() -> None:
