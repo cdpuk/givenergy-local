@@ -42,9 +42,6 @@ _GENERIC_ENTITIES = [
         key="enable_charge_target",
         name="Battery AC Charge Limit",
         icon=Icon.BATTERY_PLUS,
-        # The library no longer exposes a plain enable/disable for the charge-target
-        # bit (its set_charge_target_enabled() also writes the target SOC), so toggle
-        # the holding register directly to preserve the original behaviour.
         set_fn=lambda c, v: c.execute(
             [WriteHoldingRegisterRequest(RegisterMap.ENABLE_CHARGE_TARGET, int(v))]
         ),
