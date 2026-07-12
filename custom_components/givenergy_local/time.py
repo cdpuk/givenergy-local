@@ -12,11 +12,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from givenergy_modbus.client import commands as ge_commands
+from givenergy_modbus.model import TimeSlot
+
 from .const import DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import InverterEntity
-from .givenergy_modbus.client.commands import CommandBuilder
-from .givenergy_modbus.model import TimeSlot
 
 
 @dataclass(frozen=True)
@@ -42,7 +43,7 @@ _BATTERY_PAUSE_ENTITIES = [
         icon=Icon.BATTERY_PAUSE,
         ge_modbus_key="battery_pause_slot_1",
         get_fn=lambda t: t.start,
-        set_fn=lambda c, t: c.execute(CommandBuilder.set_pause_slot_start(t)),
+        set_fn=lambda c, t: c.execute(ge_commands.set_pause_slot_start(t)),
     ),
     MappedTimeEntityDescription(
         key="battery_pause_slot_1_end",
@@ -50,7 +51,7 @@ _BATTERY_PAUSE_ENTITIES = [
         icon=Icon.BATTERY_PAUSE,
         ge_modbus_key="battery_pause_slot_1",
         get_fn=lambda t: t.end,
-        set_fn=lambda c, t: c.execute(CommandBuilder.set_pause_slot_end(t)),
+        set_fn=lambda c, t: c.execute(ge_commands.set_pause_slot_end(t)),
     ),
 ]
 

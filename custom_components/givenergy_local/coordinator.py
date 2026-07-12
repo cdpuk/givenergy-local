@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
 
@@ -11,11 +10,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+from givenergy_modbus.client.client import Client
+from givenergy_modbus.exceptions import CommunicationError, RefreshError
+from givenergy_modbus.model.plant import Plant
+from givenergy_modbus.pdu.transparent import TransparentRequest
+
 from .const import CONF_HOST
-from .givenergy_modbus.client.client import Client
-from .givenergy_modbus.exceptions import CommunicationError, ConversionError
-from .givenergy_modbus.model.plant import Plant
-from .givenergy_modbus.pdu.transparent import TransparentRequest
 
 _LOGGER = getLogger(__name__)
 _FULL_REFRESH_INTERVAL = timedelta(minutes=5)
@@ -23,46 +23,6 @@ _REFRESH_ATTEMPTS = 3
 _REFRESH_DELAY_BETWEEN_ATTEMPTS = 2.0
 _COMMAND_TIMEOUT = 3.0
 _COMMAND_RETRIES = 3
-
-
-@dataclass
-class QualityCheck:
-    """Defines likely values for a given property."""
-
-    attr_name: str
-    min: float | None
-    max: float | None
-    min_inclusive: bool = True
-    max_inclusive: bool = True
-
-    @property
-    def range_description(self) -> str:
-        """Provide a string representation of the accepted range.
-
-        This uses mathematical notation, where square brackets mean inclusive,
-        and round brackets mean exclusive.
-        """
-        return "%s%s, %s%s" % (  # pylint: disable=consider-using-f-string
-            "[" if self.min_inclusive else "(",
-            self.min,
-            self.max,
-            "]" if self.max_inclusive else ")",
-        )
-
-
-QC = QualityCheck
-_INVERTER_QUALITY_CHECKS = [
-    QC("temp_inverter_heatsink", -10, 100),
-    QC("temp_charger", -10, 100),
-    QC("temp_battery", -10, 100),
-    QC("e_inverter_out_total", 0, 1e6, min_inclusive=False),  # 1GWh
-    QC("e_grid_in_total", 0, 1e6, min_inclusive=False),  # 1GWh
-    QC("e_grid_out_total", 0, 1e6, min_inclusive=False),  # 1GWh
-    QC("battery_percent", 0, 100),
-    QC("p_eps_backup", -15e3, 15e3),  # +/- 15kW
-    QC("p_grid_out", -1e6, 15e3),  # 15kW export, 1MW import
-    QC("p_battery", -15e3, 15e3),  # +/- 15kW
-]
 
 
 class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
@@ -81,7 +41,7 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         self.host = str(config_entry.data.get(CONF_HOST))
         self.client = Client(self.host, 8899)
         self.require_full_refresh = True
-        self.last_full_refresh = datetime.min
+        self.last_full_refresh = datetime.min.replace(tzinfo=UTC)
 
     async def async_shutdown(self) -> None:
         """Terminate the modbus connection and shut down the coordinator."""
@@ -93,20 +53,19 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         """Fetch data from the inverter."""
         if not self.client.connected:
             await self.client.connect()
-            await self.client.detect_plant()
-            self.require_full_refresh = False
-            self.last_full_refresh = datetime.now(UTC)
-            # Detection performs a full refresh - no need to trigger another one now
-            return self.client.plant
+            # Discover device type and topology. This populates plant.capabilities,
+            # which the config/measurement reads below rely on. A freshly detected
+            # plant has no register data yet, so force a full refresh this cycle.
+            await self.client.detect()
+            self.require_full_refresh = True
 
         if self.last_full_refresh < (datetime.now(UTC) - _FULL_REFRESH_INTERVAL):
             self.require_full_refresh = True
 
         # Allow a few attempts to pull back valid data.
         # Within the inverter comms, there are further retries to ensure >some< data is returned
-        # to the coordinator, but sometimes we still get bad values. When that data arrives back
-        # here, we perform some quality checks and trigger another attempt if something doesn't
-        # look right. If all that fails, then data will show as 'unavailable' in the UI.
+        # to the coordinator, but decode failures, timeouts and refresh errors can still occur.
+        # If all attempts fail, then data will show as 'unavailable' in the UI.
         attempt = 0
         while attempt < _REFRESH_ATTEMPTS:
             attempt += 1
@@ -119,9 +78,12 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                         _REFRESH_ATTEMPTS,
                         self.require_full_refresh,
                     )
-                    plant = await self.client.refresh_plant(
-                        full_refresh=self.require_full_refresh, retries=2
-                    )
+                    # A full refresh re-reads the holding-register config blocks
+                    # (settings, slots, etc.); every poll re-reads the input-register
+                    # measurement blocks.
+                    if self.require_full_refresh:
+                        await self.client.load_config(retries=2)
+                    plant = await self.client.refresh(retries=2)
             except ValueError as err:
                 # We expect to hit this path when corrupt data is received and so fails decoding.
                 # Since CRC checking was added, hitting this is far less likely.
@@ -136,6 +98,15 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                 await self.client.close()
                 await asyncio.sleep(_REFRESH_DELAY_BETWEEN_ATTEMPTS)
                 await self.client.connect()
+                await self.client.detect()
+                self.require_full_refresh = True
+                continue
+            except RefreshError as err:
+                # Some or all register reads failed this cycle. Discard any partial
+                # data and retry a few times before giving up and marking the data
+                # unavailable.
+                _LOGGER.warning("Plant refresh failed: %s", err)
+                await asyncio.sleep(_REFRESH_DELAY_BETWEEN_ATTEMPTS)
                 continue
             except CommunicationError as err:
                 _LOGGER.debug("Closing connection due to communication error: %s", err)
@@ -146,68 +117,17 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                 await self.client.close()
                 raise UpdateFailed("Connection closed due to expected error") from err
 
-            if not self._is_data_valid(plant):
-                await asyncio.sleep(_REFRESH_DELAY_BETWEEN_ATTEMPTS)
-                continue
-
             if self.require_full_refresh:
                 self.require_full_refresh = False
                 self.last_full_refresh = datetime.now(UTC)
+            _LOGGER.info(
+                f"Current time: {plant.inverter.model_dump().get('system_time')}"
+            )
             return plant
 
         raise UpdateFailed(
             f"Failed to obtain valid data after {_REFRESH_ATTEMPTS} attempts"
         )
-
-    @staticmethod
-    def _is_data_valid(plant: Plant) -> bool:
-        """Perform checks to ensure returned data actually makes sense.
-
-        The connection sometimes returns what it claims is valid data, but many of the values
-        are zero (or other highly improbable values). This is particularly painful when values
-        are used in the energy dashboard, as the dashboard double counts everything up to the
-        point in the day when the figures go back to normal.
-        """
-        try:
-            inverter_data = plant.inverter
-            _ = plant.batteries
-
-        except ConversionError as err:
-            _LOGGER.warning(
-                "Failed to convert %s from %s: %s",
-                err.key,
-                err.source_registers,
-                err.message,
-            )
-            return False
-        except Exception as err:  # pylint: disable=broad-except
-            _LOGGER.warning("Unexpected register validation error: %s", err)
-            return False
-
-        for check in _INVERTER_QUALITY_CHECKS:
-            value = inverter_data.model_dump().get(check.attr_name)
-            too_low = False
-            too_high = False
-
-            if (min_val := check.min) is not None:
-                too_low = not (
-                    value > min_val or (check.min_inclusive and value >= min_val)
-                )
-            if (max_val := check.max) is not None:
-                too_high = not (
-                    value < max_val or (check.max_inclusive and value <= max_val)
-                )
-
-            if too_low or too_high:
-                _LOGGER.warning(
-                    "Data discarded: %s value of %s is out of range %s",
-                    check.attr_name,
-                    value,
-                    check.range_description,
-                )
-                return False
-
-        return True
 
     async def execute(self, requests: list[TransparentRequest]) -> None:
         """Execute a set of requests and force an update to read any new values."""

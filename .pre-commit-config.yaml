@@ -1,12 +1,11 @@
 ---
-exclude: ^custom_components/givenergy_local/givenergy_modbus
 repos:
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.12
     hooks:
       - id: actionlint
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.11
+    rev: v0.15.21
     hooks:
       - id: ruff-check
         args:
@@ -44,7 +43,7 @@ repos:
       - id: python-typing-update
         stages: [manual]
         args:
-          - --py312-plus
+          - --py313-plus
           - --force
           - --keep-updates
         files: ^(custom_components|tests)/.+\.py$

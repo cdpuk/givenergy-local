@@ -10,9 +10,6 @@ CONF_HOST = "host"
 
 MANUFACTURER = "GivEnergy"
 
-# The nominal voltage of all LiFePO4 packs
-BATTERY_NOMINAL_VOLTAGE = 51.2
-
 
 class Icon(StrEnum):
     """Icon styles."""

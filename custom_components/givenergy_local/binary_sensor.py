@@ -16,10 +16,11 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_point_in_time
 from homeassistant.util import dt
 
+from givenergy_modbus.model import TimeSlot
+
 from .const import DOMAIN, LOGGER, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import InverterEntity
-from .givenergy_modbus.model import TimeSlot
 
 _CHARGE_SLOT_BINARY_SENSORS = [
     BinarySensorEntityDescription(

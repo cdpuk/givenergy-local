@@ -26,10 +26,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
+from givenergy_modbus.model.inverter import Model
+
 from .const import DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
 from .entity import BatteryEntity, InverterEntity
-from .givenergy_modbus.model.inverter import Model
 
 
 @dataclass(frozen=True)
@@ -96,53 +97,59 @@ _BASIC_INVERTER_SENSORS = [
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
     ),
-    SensorEntityDescription(
+    MappedSensorEntityDescription(
         key="e_inverter_out_day",
         name="Inverter Output Today",
         icon=Icon.INVERTER,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        ge_modbus_key="e_pv_generation_today",
     ),
-    SensorEntityDescription(
+    MappedSensorEntityDescription(
         key="e_inverter_out_total",
         name="Inverter Output Total",
         icon=Icon.INVERTER,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        ge_modbus_key="e_pv_generation_total",
     ),
-    SensorEntityDescription(
+    MappedSensorEntityDescription(
         key="p_inverter_out",
         name="Inverter Output Power",
         icon=Icon.INVERTER,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPower.WATT,
+        ge_modbus_key="p_grid_out_ph1",
     ),
-    SensorEntityDescription(
+    MappedSensorEntityDescription(
         key="e_battery_charge_day",
         name="Battery Charge Today",
         icon=Icon.BATTERY_PLUS,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        ge_modbus_key="e_battery_charge_today",
     ),
-    SensorEntityDescription(
+    MappedSensorEntityDescription(
         key="e_battery_discharge_day",
         name="Battery Discharge Today",
         icon=Icon.BATTERY_MINUS,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        ge_modbus_key="e_battery_discharge_today",
     ),
-    SensorEntityDescription(
+    MappedSensorEntityDescription(
         key="e_battery_throughput_total",
         name="Battery Throughput Total",
         icon=Icon.BATTERY,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        ge_modbus_key="e_battery_throughput",
     ),
     SensorEntityDescription(
         key="p_load_demand",
@@ -176,27 +183,30 @@ _BASIC_INVERTER_SENSORS = [
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPower.WATT,
     ),
-    SensorEntityDescription(
+    MappedSensorEntityDescription(
         key="p_eps_backup",
         name="Inverter EPS Backup Power",
         icon=Icon.EPS,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPower.WATT,
+        ge_modbus_key="p_backup",
     ),
-    SensorEntityDescription(
+    MappedSensorEntityDescription(
         key="battery_percent",
         name="Battery Percent",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
+        ge_modbus_key="battery_soc",
     ),
-    SensorEntityDescription(
+    MappedSensorEntityDescription(
         key="temp_battery",
         name="Battery Temperature",
         icon=Icon.BATTERY_TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        ge_modbus_key="t_battery",
     ),
     SensorEntityDescription(
         key="v_ac1",
@@ -214,21 +224,23 @@ _BASIC_INVERTER_SENSORS = [
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfFrequency.HERTZ,
     ),
-    SensorEntityDescription(
+    MappedSensorEntityDescription(
         key="temp_inverter_heatsink",
         name="Inverter Heatsink Temperature",
         icon=Icon.TEMPERATURE,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        ge_modbus_key="t_inverter_heatsink",
     ),
-    SensorEntityDescription(
+    MappedSensorEntityDescription(
         key="temp_charger",
         name="Inverter Charger Temperature",
         icon=Icon.TEMPERATURE,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        ge_modbus_key="t_charger",
     ),
 ]
 
@@ -312,7 +324,7 @@ _BASIC_BATTERY_SENSORS = [
         icon=Icon.BATTERY_MINUS,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        ge_modbus_key="e_discharge_total",
+        ge_modbus_key="e_battery_discharge_total",
     ),
     MappedSensorEntityDescription(
         key="battery_e_charge_total",
@@ -320,7 +332,7 @@ _BASIC_BATTERY_SENSORS = [
         icon=Icon.BATTERY_PLUS,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        ge_modbus_key="e_charge_total",
+        ge_modbus_key="e_battery_charge_total",
     ),
 ]
 
@@ -431,8 +443,17 @@ class InverterBasicSensor(InverterEntity, SensorEntity):
 
     @property
     def native_value(self) -> StateType:
-        """Return the register value as referenced by the 'key' property of the associated entity description."""
-        return self.data.model_dump().get(self.entity_description.key)  # type: ignore[no-any-return]
+        """Return the register value for this sensor.
+
+        The stable entity ``key`` (used for the unique_id) doesn't always match the
+        library's register name, so a ``ge_modbus_key`` override is used for lookup
+        where the upstream field was renamed.
+        """
+        lookup_key = (
+            getattr(self.entity_description, "ge_modbus_key", None)
+            or self.entity_description.key
+        )
+        return self.data.model_dump().get(lookup_key)  # type: ignore[no-any-return]
 
 
 class PVEnergyTodaySensor(InverterBasicSensor):
@@ -461,8 +482,8 @@ class ConsumptionTodaySensor(InverterBasicSensor):
         """Calculate consumption based on net inverter output plus net grid import."""
 
         consumption_today: float = (
-            self.data.e_inverter_out_day
-            - self.data.e_inverter_in_day
+            self.data.e_pv_generation_today
+            - self.data.e_ac_charge_today
             + self.data.e_grid_in_day
             - self.data.e_grid_out_day
         )
@@ -482,7 +503,7 @@ class ConsumptionTotalSensor(InverterBasicSensor):
     def native_value(self) -> StateType:
         """Calculate consumption based on net inverter output plus net grid import."""
         consumption_total: float = (
-            self.data.e_inverter_out_total
+            self.data.e_pv_generation_total
             - self.data.e_inverter_in_total
             + self.data.e_grid_in_total
             - self.data.e_grid_out_total
