@@ -462,7 +462,13 @@ class PVEnergyTodaySensor(InverterBasicSensor):
     @property
     def native_value(self) -> StateType:
         """Return the sum of energy generated across both PV strings."""
-        return self.data.e_pv1_day + self.data.e_pv2_day  # type: ignore[no-any-return]
+        e_pv1_day = self.data.e_pv1_day
+        e_pv2_day = self.data.e_pv2_day
+
+        if e_pv1_day is None or e_pv2_day is None:
+            return None
+
+        return e_pv1_day + e_pv2_day  # type: ignore[no-any-return]
 
 
 class PVPowerSensor(InverterBasicSensor):
@@ -471,7 +477,13 @@ class PVPowerSensor(InverterBasicSensor):
     @property
     def native_value(self) -> StateType:
         """Return the sum of power generated across both PV strings."""
-        return self.data.p_pv1 + self.data.p_pv2  # type: ignore[no-any-return]
+        p_pv1 = self.data.p_pv1
+        p_pv2 = self.data.p_pv2
+
+        if p_pv1 is None or p_pv2 is None:
+            return None
+
+        return p_pv1 + p_pv2  # type: ignore[no-any-return]
 
 
 class ConsumptionTodaySensor(InverterBasicSensor):
@@ -481,15 +493,30 @@ class ConsumptionTodaySensor(InverterBasicSensor):
     def native_value(self) -> StateType:
         """Calculate consumption based on net inverter output plus net grid import."""
 
+        components = [
+            self.data.e_pv_generation_today,
+            self.data.e_ac_charge_today,
+            self.data.e_grid_in_day,
+            self.data.e_grid_out_day,
+        ]
+
+        # For AC inverters, PV output doesn't count as part of the inverter output,
+        # so we need to add it on.
+        if self.data.model == Model.AC:
+            components += [self.data.e_pv1_day, self.data.e_pv2_day]
+
+        # A register value can be temporarily missing even when the fetch succeeds.
+        # Skip the update rather than emitting a wrong (lower) value that would
+        # corrupt this cumulative sensor's long-term statistics.
+        if any(component is None for component in components):
+            return None
+
         consumption_today: float = (
             self.data.e_pv_generation_today
             - self.data.e_ac_charge_today
             + self.data.e_grid_in_day
             - self.data.e_grid_out_day
         )
-
-        # For AC inverters, PV output doesn't count as part of the inverter output,
-        # so we need to add it on.
         if self.data.model == Model.AC:
             consumption_today += self.data.e_pv1_day + self.data.e_pv2_day
 
@@ -502,15 +529,30 @@ class ConsumptionTotalSensor(InverterBasicSensor):
     @property
     def native_value(self) -> StateType:
         """Calculate consumption based on net inverter output plus net grid import."""
+        components = [
+            self.data.e_pv_generation_total,
+            self.data.e_inverter_in_total,
+            self.data.e_grid_in_total,
+            self.data.e_grid_out_total,
+        ]
+
+        # For AC inverters, PV output doesn't count as part of the inverter output,
+        # so we need to add it on.
+        if self.data.model == Model.AC:
+            components.append(self.data.e_pv_total)
+
+        # A register value can be temporarily missing even when the fetch succeeds.
+        # Skip the update rather than emitting a wrong (lower) value that would
+        # corrupt this cumulative sensor's long-term statistics.
+        if any(component is None for component in components):
+            return None
+
         consumption_total: float = (
             self.data.e_pv_generation_total
             - self.data.e_inverter_in_total
             + self.data.e_grid_in_total
             - self.data.e_grid_out_total
         )
-
-        # For AC inverters, PV output doesn't count as part of the inverter output,
-        # so we need to add it on.
         if self.data.model == Model.AC:
             consumption_total += self.data.e_pv_total
 
