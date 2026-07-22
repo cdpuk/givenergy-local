@@ -49,6 +49,40 @@ def test_inverter_sensor_falls_back_to_key() -> None:
     assert sensor.native_value == 1234
 
 
+def test_inverter_sensor_falls_back_to_ge_modbus_fallback_key() -> None:
+    """When the primary key is None, the fallback key is used instead."""
+    coordinator = _coordinator_with_inverter(
+        e_battery_charge_today=None, e_battery_charge_today_alt1=1.23
+    )
+    description = MappedSensorEntityDescription(
+        key="e_battery_charge_day",
+        name="Battery Charge Today",
+        ge_modbus_key="e_battery_charge_today",
+        ge_modbus_fallback_key="e_battery_charge_today_alt1",
+    )
+
+    sensor = InverterBasicSensor(coordinator, MagicMock(), description)
+
+    assert sensor.native_value == 1.23
+
+
+def test_inverter_sensor_prefers_ge_modbus_key_over_fallback() -> None:
+    """The primary key wins when both it and the fallback have values."""
+    coordinator = _coordinator_with_inverter(
+        e_battery_charge_today=4.56, e_battery_charge_today_alt1=1.23
+    )
+    description = MappedSensorEntityDescription(
+        key="e_battery_charge_day",
+        name="Battery Charge Today",
+        ge_modbus_key="e_battery_charge_today",
+        ge_modbus_fallback_key="e_battery_charge_today_alt1",
+    )
+
+    sensor = InverterBasicSensor(coordinator, MagicMock(), description)
+
+    assert sensor.native_value == 4.56
+
+
 def _coordinator_with_inverter_attrs(**attrs: object) -> MagicMock:
     """Build a mock coordinator whose inverter exposes the given attributes."""
     coordinator = MagicMock()

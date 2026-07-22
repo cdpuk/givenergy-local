@@ -38,6 +38,7 @@ class MappedSensorEntityDescription(SensorEntityDescription):
     """Sensor description providing a lookup key to obtain the value."""
 
     ge_modbus_key: str | None = None
+    ge_modbus_fallback_key: str | None = None
 
 
 _BASIC_INVERTER_SENSORS = [
@@ -132,6 +133,7 @@ _BASIC_INVERTER_SENSORS = [
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         ge_modbus_key="e_battery_charge_today",
+        ge_modbus_fallback_key="e_battery_charge_today_alt1",
     ),
     MappedSensorEntityDescription(
         key="e_battery_discharge_day",
@@ -141,6 +143,7 @@ _BASIC_INVERTER_SENSORS = [
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         ge_modbus_key="e_battery_discharge_today",
+        ge_modbus_fallback_key="e_battery_discharge_today_alt1",
     ),
     MappedSensorEntityDescription(
         key="e_battery_throughput_total",
@@ -447,13 +450,24 @@ class InverterBasicSensor(InverterEntity, SensorEntity):
 
         The stable entity ``key`` (used for the unique_id) doesn't always match the
         library's register name, so a ``ge_modbus_key`` override is used for lookup
-        where the upstream field was renamed.
+        where the upstream field was renamed. Some upstream fields are model-routed
+        and return ``None`` for models the library doesn't yet have evidence for; a
+        ``ge_modbus_fallback_key`` provides a less specific but always-populated
+        register to fall back to in that case.
         """
         lookup_key = (
             getattr(self.entity_description, "ge_modbus_key", None)
             or self.entity_description.key
         )
-        return self.data.model_dump().get(lookup_key)  # type: ignore[no-any-return]
+        data = self.data.model_dump()
+        value = data.get(lookup_key)
+        if value is None:
+            fallback_key = getattr(
+                self.entity_description, "ge_modbus_fallback_key", None
+            )
+            if fallback_key is not None:
+                value = data.get(fallback_key)
+        return value  # type: ignore[no-any-return]
 
 
 class PVEnergyTodaySensor(InverterBasicSensor):
