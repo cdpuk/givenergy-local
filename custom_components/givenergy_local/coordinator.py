@@ -208,9 +208,6 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
             if self.require_full_refresh:
                 self.require_full_refresh = False
                 self.last_full_refresh = datetime.now(UTC)
-            _LOGGER.debug(
-                "Current time: %s", plant.inverter.model_dump().get("system_time")
-            )
             return plant
 
         raise UpdateFailed(
