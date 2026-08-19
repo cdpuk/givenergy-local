@@ -41,13 +41,26 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry, _PLATFORMS
     )
     if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
+        coordinator: GivEnergyUpdateCoordinator = hass.data[DOMAIN].pop(entry.entry_id)
+        # Explicit and immediate, rather than relying solely on the shutdown
+        # callback HA registers via config_entry.async_on_unload - that only
+        # fires after this function returns, so without this the connection
+        # (and its socket) would otherwise outlive the platforms it backs.
+        await coordinator.async_shutdown()
         async_unload_services(hass)
 
     return unload_ok
 
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Reload config entry."""
-    await async_unload_entry(hass, entry)
-    await async_setup_entry(hass, entry)
+    """Reload config entry.
+
+    Goes through hass.config_entries.async_reload rather than calling
+    async_unload_entry/async_setup_entry directly: HA only runs the config
+    entry's on-unload callbacks (which is where DataUpdateCoordinator hooks
+    its own shutdown) from within ConfigEntry.async_unload's post-unload
+    processing. Calling async_unload_entry directly skips that path
+    entirely, leaking the previous coordinator's client and socket on every
+    reload.
+    """
+    await hass.config_entries.async_reload(entry.entry_id)
