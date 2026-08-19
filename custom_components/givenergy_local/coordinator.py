@@ -8,6 +8,7 @@ from logging import getLogger
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from givenergy_modbus.client.client import Client
@@ -23,6 +24,23 @@ _REFRESH_ATTEMPTS = 3
 _REFRESH_DELAY_BETWEEN_ATTEMPTS = 2.0
 _COMMAND_TIMEOUT = 3.0
 _COMMAND_RETRIES = 3
+_EXECUTE_TIMEOUT = 15.0
+
+# Bound on how long we will wait for the underlying socket to close. A half-dead
+# dongle can leave writer.wait_closed() hanging (or raising TimeoutError)
+# indefinitely; without a bound, tearing down a wedged connection can itself
+# wedge the coordinator (see issue #147).
+_CLOSE_TIMEOUT = 5.0
+
+# Bound on connect()+detect() at the top of each poll.
+_CONNECT_TIMEOUT = 15.0
+
+# Backoff applied between reconnect attempts while the inverter is unreachable,
+# so a sick dongle is not handed a fresh socket every 10s poll while its limited
+# connection slots are still draining (see issue #147 - stale sockets on the
+# WiFi bridge).
+_RECONNECT_BACKOFF_INITIAL = 10.0
+_RECONNECT_BACKOFF_MAX = 60.0
 
 
 class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
@@ -42,22 +60,94 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         self.client = Client(self.host, 8899)
         self.require_full_refresh = True
         self.last_full_refresh = datetime.min.replace(tzinfo=UTC)
+        self._reconnect_backoff = _RECONNECT_BACKOFF_INITIAL
+        self._next_reconnect_attempt = datetime.min.replace(tzinfo=UTC)
 
     async def async_shutdown(self) -> None:
-        """Terminate the modbus connection and shut down the coordinator."""
+        """Terminate the modbus connection and shut down the coordinator.
+
+        Unschedules the refresh first, unconditionally: stopping the
+        coordinator must never be contingent on the socket closing cleanly.
+        This method must never raise - HA runs it as a detached task from the
+        config entry's on-unload processing, so an exception here would only
+        ever be logged, never surfaced or retried (see issue #147).
+        """
         _LOGGER.debug("Shutting down")
-        await self.client.close()
         await super().async_shutdown()
+        await self._close_client()
+
+    async def _close_client(self) -> bool:
+        """Close the current client, bounded and never raising.
+
+        Returns True on a clean close. On timeout or any other failure, the
+        client is discarded and replaced with a fresh, disconnected one: a
+        Client whose close() has failed can never be revived, because
+        writer.wait_closed() keeps re-raising off the same already-failed
+        close-waiter future on every subsequent attempt (issue #147).
+        Rebuilding is the only way out available from here, short of an
+        upstream fix.
+        """
+        client = self.client
+        try:
+            async with asyncio.timeout(_CLOSE_TIMEOUT):
+                await client.close()
+        except Exception as err:  # noqa: BLE001 - deliberately broad, see docstring
+            _LOGGER.warning(
+                "Failed to close inverter connection cleanly, abandoning it: %s", err
+            )
+            for task in (
+                getattr(client, "network_consumer_task", None),
+                getattr(client, "network_producer_task", None),
+            ):
+                if task is not None and not task.done():
+                    task.cancel()
+            self.client = Client(self.host, 8899)
+            return False
+        return True
+
+    async def _reconnect(self) -> None:
+        """Establish (or re-establish) the connection and device topology.
+
+        Bounded, and converts connection failures into UpdateFailed rather
+        than letting them escape raw. Backs off between attempts so a sick
+        dongle is not handed a fresh socket every 10s poll while its
+        connection slots are still draining.
+        """
+        if datetime.now(UTC) < self._next_reconnect_attempt:
+            raise UpdateFailed("Waiting before next reconnect attempt")
+
+        try:
+            async with asyncio.timeout(_CONNECT_TIMEOUT):
+                await self.client.connect()
+                # Discover device type and topology. This populates
+                # plant.capabilities, which the config/measurement reads
+                # below rely on. A freshly detected plant has no register
+                # data yet, so force a full refresh this cycle.
+                await self.client.detect()
+        except (CommunicationError, TimeoutError) as err:
+            await self._close_client()
+            self._next_reconnect_attempt = datetime.now(UTC) + timedelta(
+                seconds=self._reconnect_backoff
+            )
+            _LOGGER.warning(
+                "Failed to connect to inverter at %s, retrying in %.0fs: %s",
+                self.host,
+                self._reconnect_backoff,
+                err,
+            )
+            self._reconnect_backoff = min(
+                self._reconnect_backoff * 2, _RECONNECT_BACKOFF_MAX
+            )
+            raise UpdateFailed(f"Failed to connect to inverter: {err}") from err
+
+        self._reconnect_backoff = _RECONNECT_BACKOFF_INITIAL
+        self._next_reconnect_attempt = datetime.min.replace(tzinfo=UTC)
+        self.require_full_refresh = True
 
     async def _async_update_data(self) -> Plant:
         """Fetch data from the inverter."""
         if not self.client.connected:
-            await self.client.connect()
-            # Discover device type and topology. This populates plant.capabilities,
-            # which the config/measurement reads below rely on. A freshly detected
-            # plant has no register data yet, so force a full refresh this cycle.
-            await self.client.detect()
-            self.require_full_refresh = True
+            await self._reconnect()
 
         if self.last_full_refresh < (datetime.now(UTC) - _FULL_REFRESH_INTERVAL):
             self.require_full_refresh = True
@@ -71,7 +161,7 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
             attempt += 1
             try:
                 async with asyncio.timeout(10):
-                    _LOGGER.info(
+                    _LOGGER.debug(
                         "Fetching data from %s (attempt=%d/%d, full_refresh=%s)",
                         self.host,
                         attempt,
@@ -90,16 +180,14 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                 _LOGGER.warning("Plant refresh failed due to bad data: %s", err)
                 await asyncio.sleep(_REFRESH_DELAY_BETWEEN_ATTEMPTS)
                 continue
-            except TimeoutError:
+            except TimeoutError as err:
                 # For some inverters/environments, frequent timeout errors occur.
                 # In such cases, a retry using the same connection is often unsuccessful.
-                # To prevent 'unavailable' data in HA, we attempt a full reconnect here.
-                _LOGGER.warning("Plant refresh timed out")
-                await self.client.close()
+                # To prevent 'unavailable' data in HA, we close the connection here so the
+                # next poll's top-of-loop check reconnects (bounded, with backoff).
+                _LOGGER.warning("Plant refresh timed out: %s", err)
+                await self._close_client()
                 await asyncio.sleep(_REFRESH_DELAY_BETWEEN_ATTEMPTS)
-                await self.client.connect()
-                await self.client.detect()
-                self.require_full_refresh = True
                 continue
             except RefreshError as err:
                 # Some or all register reads failed this cycle. Discard any partial
@@ -110,19 +198,16 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                 continue
             except CommunicationError as err:
                 _LOGGER.debug("Closing connection due to communication error: %s", err)
-                await self.client.close()
+                await self._close_client()
                 raise UpdateFailed() from err
             except Exception as err:
-                _LOGGER.error("Closing connection due to expected error: %s", err)
-                await self.client.close()
-                raise UpdateFailed("Connection closed due to expected error") from err
+                _LOGGER.error("Closing connection due to unexpected error: %s", err)
+                await self._close_client()
+                raise UpdateFailed("Connection closed due to unexpected error") from err
 
             if self.require_full_refresh:
                 self.require_full_refresh = False
                 self.last_full_refresh = datetime.now(UTC)
-            _LOGGER.info(
-                f"Current time: {plant.inverter.model_dump().get('system_time')}"
-            )
             return plant
 
         raise UpdateFailed(
@@ -131,6 +216,12 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
 
     async def execute(self, requests: list[TransparentRequest]) -> None:
         """Execute a set of requests and force an update to read any new values."""
-        self.client.execute(requests, _COMMAND_TIMEOUT, _COMMAND_RETRIES)
+        try:
+            async with asyncio.timeout(_EXECUTE_TIMEOUT):
+                await self.client.execute(requests, _COMMAND_TIMEOUT, _COMMAND_RETRIES)
+        except (TimeoutError, CommunicationError) as err:
+            raise HomeAssistantError(
+                f"Failed to send command to inverter: {err}"
+            ) from err
         self.require_full_refresh = True
         await self.async_request_refresh()
