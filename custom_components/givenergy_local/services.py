@@ -12,6 +12,7 @@ import voluptuous as vol
 
 from givenergy_modbus.client import commands as ge_commands
 from givenergy_modbus.model import TimeSlot
+from givenergy_modbus.model.slot_map import SINGLE_PHASE_SLOTS
 from givenergy_modbus.pdu.transparent import TransparentRequest
 
 from .const import DOMAIN, LOGGER
@@ -184,12 +185,19 @@ async def _async_enable_timed_charge(hass: HomeAssistant, data: dict[str, Any]) 
     Note that this isn't a battery mode like "Timed Discharge", "Eco", etc. It operates in
     parallel to those modes.
     """
-    commands = ge_commands.set_enable_charge(True)
+    commands: list[TransparentRequest] = []
 
-    if _ATTR_START_TIME in data and _ATTR_END_TIME in data:
+    if _ATTR_START_TIME in data:
         start_time = datetime.time.fromisoformat(data[_ATTR_START_TIME])
+        commands.extend(
+            ge_commands.set_charge_slot_start(1, start_time, SINGLE_PHASE_SLOTS)
+        )
+
+    if _ATTR_END_TIME in data:
         end_time = datetime.time.fromisoformat(data[_ATTR_END_TIME])
-        commands.extend(ge_commands.set_charge_slot_1(TimeSlot(start_time, end_time)))
+        commands.extend(
+            ge_commands.set_charge_slot_end(1, end_time, SINGLE_PHASE_SLOTS)
+        )
 
     if _ATTR_CHARGE_TARGET in data:
         target_soc = int(data[_ATTR_CHARGE_TARGET])
@@ -198,8 +206,13 @@ async def _async_enable_timed_charge(hass: HomeAssistant, data: dict[str, Any]) 
         # bounces between 99-100% in a charge/discharge cycle, so avoid this, matching
         # behaviour of GivEnergy logic. set_charge_target_enabled() applies exactly
         # this rule: it enables charging and, for a target of 100%, clears the charge
-        # target rather than setting it.
+        # target rather than setting it. It also enables charging itself, so it must
+        # not be combined with a separate set_enable_charge() call below - the two
+        # would write ENABLE_CHARGE (HR 96) twice in the same batch, and the client
+        # cancels the first of any two same-register writes it sees in flight together.
         commands.extend(ge_commands.set_charge_target_enabled(target_soc))
+    else:
+        commands.extend(ge_commands.set_enable_charge(True))
 
     LOGGER.debug("Activating timed charge mode")
     await _async_service_call(hass, data[ATTR_DEVICE_ID], commands)
