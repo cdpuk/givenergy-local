@@ -43,6 +43,25 @@ _RECONNECT_BACKOFF_INITIAL = 10.0
 _RECONNECT_BACKOFF_MAX = 60.0
 
 
+def _dedupe_requests(requests: list[TransparentRequest]) -> list[TransparentRequest]:
+    """Collapse repeat writes to the same register within a single batch.
+
+    Client.execute() gathers requests concurrently, and Client keys in-flight
+    requests by expected-response shape - which covers the register, not the
+    value. Two requests sharing a shape make the second cancel the first in
+    flight, and gather(return_exceptions=False) then aborts the whole batch
+    with the resulting CancelledError. Later entries win, so an intentional
+    final value for a register is preserved.
+    """
+    unique: dict[int, TransparentRequest] = {}
+    for request in requests:
+        key = request.expected_response().shape_hash()
+        if key in unique:
+            _LOGGER.warning("Dropping duplicate request from batch: %s", request)
+        unique[key] = request
+    return list(unique.values())
+
+
 class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
     """Update coordinator that fetches data from a GivEnergy inverter."""
 
@@ -216,6 +235,7 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
 
     async def execute(self, requests: list[TransparentRequest]) -> None:
         """Execute a set of requests and force an update to read any new values."""
+        requests = _dedupe_requests(requests)
         try:
             async with asyncio.timeout(_EXECUTE_TIMEOUT):
                 await self.client.execute(requests, _COMMAND_TIMEOUT, _COMMAND_RETRIES)
