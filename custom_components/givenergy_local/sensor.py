@@ -450,10 +450,14 @@ class InverterBasicSensor(InverterEntity, SensorEntity):
 
         The stable entity ``key`` (used for the unique_id) doesn't always match the
         library's register name, so a ``ge_modbus_key`` override is used for lookup
-        where the upstream field was renamed. Some upstream fields are model-routed
-        and return ``None`` for models the library doesn't yet have evidence for; a
-        ``ge_modbus_fallback_key`` provides a less specific but always-populated
-        register to fall back to in that case.
+        where the upstream field was renamed. Some upstream fields are model-routed,
+        and a ``ge_modbus_fallback_key`` provides a less specific but more widely
+        populated register to fall back to when that routing doesn't produce a
+        reading. That covers two cases: the field returns ``None`` for models the
+        library doesn't yet have evidence for, and the field routes to a register
+        block the inverter doesn't populate, which reads a plausible-looking zero
+        rather than ``None``. A zero primary is therefore treated as "no reading"
+        where an explicit fallback is declared.
         """
         lookup_key = (
             getattr(self.entity_description, "ge_modbus_key", None)
@@ -461,12 +465,14 @@ class InverterBasicSensor(InverterEntity, SensorEntity):
         )
         data = self.data.model_dump()
         value = data.get(lookup_key)
-        if value is None:
+        if not value:
             fallback_key = getattr(
                 self.entity_description, "ge_modbus_fallback_key", None
             )
             if fallback_key is not None:
-                value = data.get(fallback_key)
+                # Keep the primary if the fallback is missing or also zero, so a
+                # genuinely idle day still reports 0 instead of going unavailable.
+                value = data.get(fallback_key) or value
         return value  # type: ignore[no-any-return]
 
 
