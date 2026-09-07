@@ -6,15 +6,18 @@ import asyncio
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
 
+from givenergy_modbus.client.client import Client
+from givenergy_modbus.exceptions import (
+    CommunicationError,
+    RefreshError,
+    RefreshPartiallySucceeded,
+)
+from givenergy_modbus.model.plant import Plant
+from givenergy_modbus.pdu.transparent import TransparentRequest
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-
-from givenergy_modbus.client.client import Client
-from givenergy_modbus.exceptions import CommunicationError, RefreshError
-from givenergy_modbus.model.plant import Plant
-from givenergy_modbus.pdu.transparent import TransparentRequest
 
 from .const import CONF_HOST
 
@@ -81,6 +84,24 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
         self.last_full_refresh = datetime.min.replace(tzinfo=UTC)
         self._reconnect_backoff = _RECONNECT_BACKOFF_INITIAL
         self._next_reconnect_attempt = datetime.min.replace(tzinfo=UTC)
+        self._unsupported_config_blocks: set[int] = set()
+
+    def _disable_unsupported_config_blocks(self) -> None:
+        """Prevent re-polling optional register blocks that are not supported by the hardware."""
+        caps = self.client.plant.capabilities
+        if (
+            caps is not None
+            and 300 in self._unsupported_config_blocks
+            and caps.has_ac_config_block
+        ):
+            # Override has_ac_config_block on this capabilities instance so future
+            # load_config() calls do not re-request HR(300) and incur timeout delays.
+            class _NoAcConfigCapabilities(type(caps)):
+                @property
+                def has_ac_config_block(self) -> bool:
+                    return False
+
+            caps.__class__ = _NoAcConfigCapabilities
 
     async def async_shutdown(self) -> None:
         """Terminate the modbus connection and shut down the coordinator.
@@ -143,6 +164,7 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                 # below rely on. A freshly detected plant has no register
                 # data yet, so force a full refresh this cycle.
                 await self.client.detect()
+                self._disable_unsupported_config_blocks()
         except (CommunicationError, TimeoutError) as err:
             await self._close_client()
             self._next_reconnect_attempt = datetime.now(UTC) + timedelta(
@@ -191,7 +213,27 @@ class GivEnergyUpdateCoordinator(DataUpdateCoordinator[Plant]):
                     # (settings, slots, etc.); every poll re-reads the input-register
                     # measurement blocks.
                     if self.require_full_refresh:
-                        await self.client.load_config(retries=2)
+                        try:
+                            await self.client.load_config(retries=2)
+                        except RefreshPartiallySucceeded as err:
+                            # Some inverters (such as Gen 1 AC Coupled units) do not support
+                            # optional holding register blocks (e.g. HR 300) and time out.
+                            # If only non-critical blocks failed, accept the partial config
+                            # and avoid re-soliciting them on future full refreshes.
+                            if all(f.base_register in (300,) for f in err.failures):
+                                _LOGGER.info(
+                                    "Inverter does not support optional config registers (%s); proceeding with partial config",
+                                    ", ".join(
+                                        f"{f.request_type}(0x{f.device_address:02x}, {f.base_register})"
+                                        for f in err.failures
+                                    ),
+                                )
+                                self._unsupported_config_blocks.update(
+                                    f.base_register for f in err.failures
+                                )
+                                self._disable_unsupported_config_blocks()
+                            else:
+                                raise
                     plant = await self.client.refresh(retries=2)
             except ValueError as err:
                 # We expect to hit this path when corrupt data is received and so fails decoding.
