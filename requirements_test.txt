@@ -1,2 +1,0 @@
-givenergy-modbus>=2.13.0,<3
-pytest-homeassistant-custom-component

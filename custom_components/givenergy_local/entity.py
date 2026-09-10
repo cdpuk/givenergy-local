@@ -132,7 +132,15 @@ class BatteryEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
             serial_number=self.data.serial_number,
             sw_version=str(self.data.bms_firmware_version),
             configuration_url="https://givenergy.cloud",
-            via_device=(DOMAIN, self.coordinator.data.inverter.serial_number),
+            # HA 2026.8 dropped `via_device` from the DeviceInfo TypedDict in favour
+            # of `via_device_id`, which needs the inverter's device registry ID rather
+            # than its identifiers. We can't switch while hacs.json still supports
+            # 2026.3, because passing `via_device_id` to anything below 2026.8 raises.
+            # `via_device` keeps working until it's removed in HA 2027.8.
+            via_device=(  # type: ignore[typeddict-unknown-key]
+                DOMAIN,
+                self.coordinator.data.inverter.serial_number,
+            ),
         )
 
     @property

@@ -42,7 +42,7 @@ Report a bug by [opening a new issue](../../issues/new/choose).
 
 ## Use a Consistent Coding Style
 
-Home Assistant and all custom components use [black](https://github.com/ambv/black) to make sure the code follows the style.
+Home Assistant and all custom components use [ruff](https://docs.astral.sh/ruff/) to make sure the code follows the style.
 
 As mentioned above, the `pre-commit` hook will help enforce this.
 
@@ -52,18 +52,20 @@ This repository is set up with support for Visual Studio Code development contai
 
 This allows you to easily run the integration against an isolated Home Assistant instance.
 
-Once open in the devcontainer, install dev and test dependencies:
+Dependencies are managed with [uv](https://docs.astral.sh/uv/). Once open in the devcontainer, install everything and configure `pre-commit` checks with:
 
 ```
-pip install -r requirements_dev.txt
-pip install -r requirements_test.txt
+scripts/setup
 ```
 
-Then configure `pre-commit` checks:
+That is equivalent to:
 
 ```
-pre-commit install
+uv sync
+uv run pre-commit install
 ```
+
+Tools are then run from the locked environment, for example `uv run pytest tests/` or `uv run pre-commit run --all-files`.
 
 ## License
 

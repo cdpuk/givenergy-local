@@ -13,23 +13,31 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: ["3.13", "3.14"]
+        python-version: ["3.14"]
     name: Run tests (Python ${{ matrix.python-version }})
     steps:
       - name: Check out code from GitHub
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
         with:
+          enable-cache: true
           python-version: ${{ matrix.python-version }}
 
-      - name: Install requirements
-        run: python3 -m pip install -r requirements.txt -r requirements_test.txt
+      - name: Install dependencies
+        if: github.event_name != 'schedule'
+        run: uv sync --locked
+
+      # Scheduled runs deliberately resolve fresh, so new Home Assistant
+      # releases are exercised rather than pinned by uv.lock.
+      - name: Install dependencies (latest)
+        if: github.event_name == 'schedule'
+        run: uv sync --upgrade
 
       - name: Run tests
         run: |
-          pytest \
+          uv run pytest \
             -qq \
             --timeout=9 \
             --durations=10 \

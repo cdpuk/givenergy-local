@@ -1,4 +1,0 @@
-givenergy-modbus>=2.13.0,<3
-
-# Don't pin the HA version
-homeassistant

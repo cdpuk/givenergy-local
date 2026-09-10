@@ -1,0 +1,70 @@
+[project]
+name = "givenergy-local"
+# Unused: the release version lives in custom_components/givenergy_local/manifest.json
+version = "0.0.0"
+requires-python = ">=3.14.2"
+dependencies = [
+  "givenergy-modbus>=2.13.0,<3",
+  # Don't pin the HA version
+  "homeassistant",
+]
+
+[dependency-groups]
+dev = [
+  "mypy",
+  "pre-commit",
+  "pytest-homeassistant-custom-component",
+]
+
+[tool.uv]
+# This is a Home Assistant custom component, not an installable package.
+package = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 88
+# Matches the Python floor of the oldest supported Home Assistant (see hacs.json).
+# Pinned explicitly rather than inferred from requires-python, so that raising the dev
+# toolchain can never silently emit syntax users' installs can't parse.
+target-version = "py314"
+
+[tool.mypy]
+python_version = "3.14"
+show_error_codes = true
+follow_imports = "normal"
+local_partial_types = true
+strict_equality = true
+no_implicit_optional = true
+warn_incomplete_stub = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+enable_error_code = ["ignore-without-code", "redundant-self", "truthy-iterable"]
+disable_error_code = ["annotation-unchecked", "import-not-found", "import-untyped"]
+extra_checks = false
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_untyped_defs = true
+warn_return_any = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = "givenergy_modbus.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+check_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_subclassing_any = false
+disallow_untyped_calls = false
+disallow_untyped_decorators = false
+disallow_untyped_defs = false
+no_implicit_optional = false
+warn_return_any = false
+warn_unreachable = false

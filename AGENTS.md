@@ -8,26 +8,29 @@ This is **GivEnergy Local**, a Home Assistant custom component (HACS custom repo
 
 ## Commands
 
-Install dependencies:
+Dependencies are managed with [uv](https://docs.astral.sh/uv/); everything is
+declared in `pyproject.toml` and locked in `uv.lock`. Install:
 
 ```
-pip install -r requirements.txt -r requirements_dev.txt -r requirements_test.txt
-pre-commit install
+uv sync                    # creates .venv and installs project + dev dependencies
+uv run pre-commit install  # optional: enable git hooks
 ```
+
+Run every tool through `uv run` so it comes from the locked environment.
 
 Testing (uses `pytest-homeassistant-custom-component`; `asyncio_mode = auto`):
 
 ```
-pytest tests/                                              # all tests
-pytest tests/test_init.py -k test_setup_unload_and_reload_entry   # single test
-pytest --cov=custom_components.givenergy_local --cov-report term-missing tests   # with coverage
+uv run pytest tests/                                              # all tests
+uv run pytest tests/test_init.py -k test_setup_unload_and_reload_entry   # single test
+uv run pytest --cov=custom_components.givenergy_local --cov-report term-missing tests   # with coverage
 ```
 
 Lint / type-check (also runs via pre-commit and CI):
 
 ```
-pre-commit run --all-files    # ruff (check + format), codespell, yamllint, actionlint, mypy
-mypy custom_components/       # type-check on its own
+uv run pre-commit run --all-files    # ruff (check + format), codespell, yamllint, actionlint, mypy
+uv run mypy custom_components/       # type-check on its own
 ```
 
 There is a devcontainer (`.devcontainer.json`) that runs an isolated Home Assistant instance against the `config/` directory for manual testing.
@@ -38,7 +41,7 @@ The code is in two layers with a hard boundary between them:
 
 ### 1. Modbus protocol library — external `givenergy-modbus` (PyPI)
 
-The non-standard GivEnergy Modbus protocol is handled by the published [`givenergy-modbus`](https://github.com/dewet22/givenergy-modbus) package (pinned in `manifest.json` / `requirements*.txt`). The integration imports the package as `givenergy_modbus.*`. Key pieces the integration uses:
+The non-standard GivEnergy Modbus protocol is handled by the published [`givenergy-modbus`](https://github.com/dewet22/givenergy-modbus) package (pinned in `manifest.json` / `pyproject.toml`). The integration imports the package as `givenergy_modbus.*`. Key pieces the integration uses:
 
 - `givenergy_modbus.client.client.Client` — async client holding a long-lived TCP connection. `detect()` resolves device type/topology (sets `plant.capabilities`); `load_config()` reads holding-register config blocks; `refresh()` reads input-register measurements; `execute()` sends write commands. (`refresh_plant()` still exists but is deprecated upstream — don't reintroduce it.)
 - `givenergy_modbus.client.commands` — **module-level functions** (e.g. `set_mode_dynamic`, `set_charge_slot_1`, `set_inverter_reboot`, `set_charge_target_enabled`) plus `RegisterMap` (holding-register addresses). Not a `CommandBuilder` class.
@@ -62,7 +65,8 @@ Upstream field names have changed over time. Sensor entity descriptions keep a s
 ## Conventions
 
 - Formatting/linting is **ruff** (check + format); line length 88. Do not hand-format — let `ruff-format` do it.
-- Type checking is strict via `mypy.ini`; the external `givenergy_modbus.*` package is set to `ignore_missing_imports`.
-- CI runs on Python 3.13 and 3.14; target modern syntax (`from __future__ import annotations`, `X | None`, `py313-plus`).
-- `manifest.json` `version` is bumped manually per release; keep it updated for HACS. The `givenergy-modbus` dependency is also pinned there (and in `requirements*.txt`).
+- Type checking is strict via `[tool.mypy]` in `pyproject.toml`; the external `givenergy_modbus.*` package is set to `ignore_missing_imports`.
+- Python 3.14.2+ everywhere: it's what Home Assistant 2026.3+ requires, so it's the floor for the dev toolchain (`requires-python`), the shipped component (ruff `target-version`, `py314-plus`), and the minimum supported HA (`hacs.json`). CI runs on 3.14. Target modern syntax (`from __future__ import annotations`, `X | None`).
+- `manifest.json` `version` is bumped manually per release; keep it updated for HACS. The `givenergy-modbus` pin lives in both `manifest.json` and `pyproject.toml` — keep the two in sync.
+- Home Assistant is deliberately left unpinned in `pyproject.toml`. `uv.lock` is committed so local and PR builds are reproducible, but the nightly scheduled CI runs `uv sync --upgrade` to catch breakage from new HA releases. After changing dependencies, run `uv lock` and commit the result.
 - When adding an inverter capability, wire it through: the `givenergy_modbus` command function / `RegisterMap` (protocol) → coordinator/service (HA action) → entity description (exposed value) → `services.yaml`/translations (UI), and add tests under `tests/`.
