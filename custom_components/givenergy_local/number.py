@@ -1,7 +1,8 @@
 """Home Assistant number entity descriptions."""
 
-from __future__ import annotations
-
+from givenergy_modbus.client import commands as ge_commands
+from givenergy_modbus.client.commands import RegisterMap
+from givenergy_modbus.pdu.write_registers import WriteHoldingRegisterRequest
 from homeassistant.components.number import (
     NumberDeviceClass,
     NumberEntity,
@@ -11,10 +12,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, UnitOfPower
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
-from givenergy_modbus.client import commands as ge_commands
-from givenergy_modbus.client.commands import RegisterMap
-from givenergy_modbus.pdu.write_registers import WriteHoldingRegisterRequest
 
 from .const import DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator

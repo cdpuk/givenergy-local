@@ -1,12 +1,10 @@
 """Home Assistant sensor descriptions."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass
-
 from typing import Any
 
+from givenergy_modbus.model.inverter import Model
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -25,8 +23,6 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
-
-from givenergy_modbus.model.inverter import Model
 
 from .const import DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator

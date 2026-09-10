@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """CLI tool for inverter debugging."""
 
 import argparse
@@ -7,7 +6,6 @@ import asyncio
 import logging
 import sys
 from types import TracebackType
-from typing import Type
 
 from givenergy_modbus.client.client import Client
 from givenergy_modbus.pdu.read_registers import (
@@ -131,7 +129,7 @@ class InverterDebugger:
             response = await client.send_request_and_await_response(
                 request, timeout=1, retries=0
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             print("Request timed out")
             return
 
@@ -167,7 +165,7 @@ class ThrowawayClient:
 
     async def __aexit__(
         self,
-        exc_type: Type[BaseException],
+        exc_type: type[BaseException],
         exc_value: BaseException,
         exc_tb: TracebackType,
     ) -> None:

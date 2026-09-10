@@ -1,14 +1,11 @@
 """Select platform."""
 
-from __future__ import annotations
-
+from givenergy_modbus.client import commands as ge_commands
+from givenergy_modbus.model.battery import BatteryPauseMode
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
-from givenergy_modbus.client import commands as ge_commands
-from givenergy_modbus.model.battery import BatteryPauseMode
 
 from . import GivEnergyUpdateCoordinator
 from .const import DOMAIN, Icon

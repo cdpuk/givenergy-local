@@ -1,20 +1,17 @@
 """The GivEnergy update coordinator."""
 
-from __future__ import annotations
-
 import asyncio
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
-
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from givenergy_modbus.client.client import Client
 from givenergy_modbus.exceptions import CommunicationError, RefreshError
 from givenergy_modbus.model.plant import Plant
 from givenergy_modbus.pdu.transparent import TransparentRequest
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import CONF_HOST
 

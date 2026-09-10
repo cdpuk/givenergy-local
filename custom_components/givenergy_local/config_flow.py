@@ -1,15 +1,11 @@
 """Config flow for GivEnergy integration."""
 
-from __future__ import annotations
-
 import asyncio
-
 from typing import Any
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 import voluptuous as vol
-
 from givenergy_modbus.client.client import Client
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 
 from .const import CONF_HOST, DOMAIN, LOGGER
 

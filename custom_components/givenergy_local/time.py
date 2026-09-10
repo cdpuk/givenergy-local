@@ -1,19 +1,16 @@
 """Home Assistant sensor descriptions."""
 
-from __future__ import annotations
-
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import time
+from typing import cast
 
-from typing import Awaitable, Callable, cast
-
+from givenergy_modbus.client import commands as ge_commands
+from givenergy_modbus.model import TimeSlot
 from homeassistant.components.time import TimeEntity, TimeEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
-from givenergy_modbus.client import commands as ge_commands
-from givenergy_modbus.model import TimeSlot
 
 from .const import DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator

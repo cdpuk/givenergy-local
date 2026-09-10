@@ -1,11 +1,10 @@
 """Binary sensor platform."""
 
-from __future__ import annotations
-
+from collections.abc import Mapping
 from datetime import datetime, time, timedelta
+from typing import Any, cast
 
-from typing import Any, Mapping, cast
-
+from givenergy_modbus.model import TimeSlot
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
@@ -15,8 +14,6 @@ from homeassistant.core import CALLBACK_TYPE, HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_point_in_time
 from homeassistant.util import dt
-
-from givenergy_modbus.model import TimeSlot
 
 from .const import DOMAIN, LOGGER, Icon
 from .coordinator import GivEnergyUpdateCoordinator

@@ -1,18 +1,16 @@
 """Switch sensor platform."""
 
-from __future__ import annotations
-
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable
-
-from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from typing import Any
 
 from givenergy_modbus.client import commands as ge_commands
 from givenergy_modbus.client.commands import RegisterMap
 from givenergy_modbus.pdu.write_registers import WriteHoldingRegisterRequest
+from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN, Icon
 from .coordinator import GivEnergyUpdateCoordinator
