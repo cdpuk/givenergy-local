@@ -3,6 +3,13 @@ from unittest.mock import MagicMock
 from givenergy_modbus.model.inverter import Model
 
 from custom_components.givenergy_local.sensor import (
+    _BATTERY_CALIBRATED_CAPACITY_SENSOR,
+    _BATTERY_DESIGN_CAPACITY_SENSOR,
+    _BATTERY_RESERVE_CAPACITY_SENSOR,
+    _BATTERY_RUNTIME_SENSOR,
+    BatteryCapacitySensor,
+    BatteryReserveCapacitySensor,
+    BatteryRuntimeSensor,
     ConsumptionTodaySensor,
     ConsumptionTotalSensor,
     InverterBasicSensor,
@@ -167,5 +174,113 @@ def test_pv_power_skips_update_when_value_missing() -> None:
     coordinator = _coordinator_with_inverter_attrs(p_pv1=None, p_pv2=200)
 
     sensor = PVPowerSensor(coordinator, MagicMock(), MagicMock())
+
+    assert sensor.native_value is None
+
+
+def _coordinator_with_battery(
+    *, battery: dict[str, object], inverter: dict[str, object] | None = None
+) -> MagicMock:
+    """Build a mock coordinator exposing one battery and its inverter."""
+    coordinator = MagicMock()
+    coordinator.data.batteries = [MagicMock()]
+    battery_mock = coordinator.data.batteries[0]
+    battery_mock.model_dump.return_value = dict(battery)
+    battery_mock.serial_number = "BAT01"
+    for name, value in battery.items():
+        setattr(battery_mock, name, value)
+    for name, value in (inverter or {}).items():
+        setattr(coordinator.data.inverter, name, value)
+    return coordinator
+
+
+def test_battery_capacity_converts_ah_to_kwh() -> None:
+    """Design capacity is the raw Ah value scaled by pack voltage."""
+    coordinator = _coordinator_with_battery(
+        battery={"cap_design2": 102.0, "v_cells_sum": 51.2}
+    )
+
+    sensor = BatteryCapacitySensor(
+        coordinator, MagicMock(), _BATTERY_DESIGN_CAPACITY_SENSOR, 0
+    )
+
+    # 102 Ah * 51.2 V / 1000
+    assert sensor.native_value == 5.222
+
+
+def test_battery_capacity_skips_update_when_value_missing() -> None:
+    """A missing register must not raise."""
+    coordinator = _coordinator_with_battery(
+        battery={"cap_calibrated": None, "v_cells_sum": 51.2}
+    )
+
+    sensor = BatteryCapacitySensor(
+        coordinator, MagicMock(), _BATTERY_CALIBRATED_CAPACITY_SENSOR, 0
+    )
+
+    assert sensor.native_value is None
+
+
+def test_battery_reserve_capacity_applies_reserve_percentage() -> None:
+    """Reserve capacity is the configured percentage of calibrated capacity."""
+    coordinator = _coordinator_with_battery(
+        battery={"cap_calibrated": 100.0, "v_cells_sum": 51.2},
+        inverter={"battery_soc_reserve": 10},
+    )
+
+    sensor = BatteryReserveCapacitySensor(
+        coordinator, MagicMock(), _BATTERY_RESERVE_CAPACITY_SENSOR, 0
+    )
+
+    # 10% of (100 Ah * 51.2 V / 1000)
+    assert sensor.native_value == 0.512
+
+
+def test_battery_runtime_while_charging() -> None:
+    """Charging reports the seconds until the pack is full."""
+    coordinator = _coordinator_with_battery(
+        battery={"cap_calibrated": 100.0, "cap_remaining": 50.0, "v_cells_sum": 50.0},
+        inverter={"battery_soc_reserve": 10, "p_battery": -2500},
+    )
+
+    sensor = BatteryRuntimeSensor(coordinator, MagicMock(), _BATTERY_RUNTIME_SENSOR, 0)
+
+    # 2500 Wh still to take at 2500 W = 1 hour
+    assert sensor.native_value == 3600
+
+
+def test_battery_runtime_while_discharging_stops_at_reserve() -> None:
+    """Discharging counts down to the reserve, not to empty."""
+    coordinator = _coordinator_with_battery(
+        battery={"cap_calibrated": 100.0, "cap_remaining": 50.0, "v_cells_sum": 50.0},
+        inverter={"battery_soc_reserve": 10, "p_battery": 2000},
+    )
+
+    sensor = BatteryRuntimeSensor(coordinator, MagicMock(), _BATTERY_RUNTIME_SENSOR, 0)
+
+    # 2500 Wh present, 500 Wh reserved, 2000 Wh usable at 2000 W = 1 hour
+    assert sensor.native_value == 3600
+
+
+def test_battery_runtime_is_zero_when_idle() -> None:
+    """No current flow means no meaningful estimate."""
+    coordinator = _coordinator_with_battery(
+        battery={"cap_calibrated": 100.0, "cap_remaining": 50.0, "v_cells_sum": 50.0},
+        inverter={"battery_soc_reserve": 10, "p_battery": 0},
+    )
+
+    sensor = BatteryRuntimeSensor(coordinator, MagicMock(), _BATTERY_RUNTIME_SENSOR, 0)
+
+    assert sensor.native_value == 0
+
+
+def test_battery_runtime_skips_update_when_value_missing() -> None:
+    """A missing register must not raise."""
+    coordinator = _coordinator_with_battery(
+        battery={"cap_calibrated": 100.0, "cap_remaining": 50.0, "v_cells_sum": None},
+        inverter={"battery_soc_reserve": 10, "p_battery": 2000},
+    )
+
+    sensor = BatteryRuntimeSensor(coordinator, MagicMock(), _BATTERY_RUNTIME_SENSOR, 0)
 
     assert sensor.native_value is None

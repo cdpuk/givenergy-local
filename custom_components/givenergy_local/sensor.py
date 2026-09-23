@@ -19,6 +19,7 @@ from homeassistant.const import (
     UnitOfFrequency,
     UnitOfPower,
     UnitOfTemperature,
+    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -345,6 +346,44 @@ _BATTERY_REMAINING_CAPACITY_SENSOR = MappedSensorEntityDescription(
     ge_modbus_key="cap_remaining",
 )
 
+_BATTERY_DESIGN_CAPACITY_SENSOR = MappedSensorEntityDescription(
+    key="battery_design_capacity",
+    name="Battery Design Capacity",
+    icon=Icon.BATTERY,
+    device_class=SensorDeviceClass.ENERGY,
+    state_class=SensorStateClass.TOTAL,
+    native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+    ge_modbus_key="cap_design2",
+)
+
+_BATTERY_CALIBRATED_CAPACITY_SENSOR = MappedSensorEntityDescription(
+    key="battery_calibrated_capacity",
+    name="Battery Calibrated Capacity",
+    icon=Icon.BATTERY,
+    device_class=SensorDeviceClass.ENERGY,
+    state_class=SensorStateClass.TOTAL,
+    native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+    ge_modbus_key="cap_calibrated",
+)
+
+_BATTERY_RESERVE_CAPACITY_SENSOR = MappedSensorEntityDescription(
+    key="battery_reserve_capacity",
+    name="Battery Reserve Capacity",
+    icon=Icon.BATTERY,
+    device_class=SensorDeviceClass.ENERGY,
+    state_class=SensorStateClass.TOTAL,
+    native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+)
+
+_BATTERY_RUNTIME_SENSOR = MappedSensorEntityDescription(
+    key="battery_runtime",
+    name="Battery Runtime",
+    icon=Icon.BATTERY_PAUSE,
+    device_class=SensorDeviceClass.DURATION,
+    state_class=SensorStateClass.MEASUREMENT,
+    native_unit_of_measurement=UnitOfTime.SECONDS,
+)
+
 _BATTERY_CELLS_VOLTAGE_SENSOR = MappedSensorEntityDescription(
     key="v_battery_cells_sum",
     name="Battery Cells Voltage",
@@ -418,6 +457,30 @@ async def async_setup_entry(
                     coordinator,
                     config_entry,
                     entity_description=_BATTERY_CELLS_VOLTAGE_SENSOR,
+                    battery_id=batt_num,
+                ),
+                BatteryCapacitySensor(
+                    coordinator,
+                    config_entry,
+                    entity_description=_BATTERY_DESIGN_CAPACITY_SENSOR,
+                    battery_id=batt_num,
+                ),
+                BatteryCapacitySensor(
+                    coordinator,
+                    config_entry,
+                    entity_description=_BATTERY_CALIBRATED_CAPACITY_SENSOR,
+                    battery_id=batt_num,
+                ),
+                BatteryReserveCapacitySensor(
+                    coordinator,
+                    config_entry,
+                    entity_description=_BATTERY_RESERVE_CAPACITY_SENSOR,
+                    battery_id=batt_num,
+                ),
+                BatteryRuntimeSensor(
+                    coordinator,
+                    config_entry,
+                    entity_description=_BATTERY_RUNTIME_SENSOR,
                     battery_id=batt_num,
                 ),
             ]
@@ -639,6 +702,70 @@ class BatteryRemainingCapacitySensor(BatteryBasicSensor):
         # Raw value is in Ah (Amp Hour)
         # Convert to KWh using formula Ah * V / 1000
         return round(battery_remaining_capacity, 3)
+
+
+class BatteryCapacitySensor(BatteryBasicSensor):
+    """A battery capacity reported in Ah, converted to energy in kWh."""
+
+    @property
+    def native_value(self) -> StateType:
+        """Convert the raw Ah capacity using the pack voltage: Ah * V / 1000."""
+        capacity_ah = self.data.model_dump().get(self.entity_description.ge_modbus_key)
+        voltage = self.data.v_cells_sum
+        if capacity_ah is None or voltage is None:
+            return None
+        return round(float(capacity_ah) * float(voltage) / 1000, 3)
+
+
+class BatteryReserveCapacitySensor(BatteryBasicSensor):
+    """The energy held back by the inverter's reserve setting."""
+
+    @property
+    def native_value(self) -> StateType:
+        """Apply the configured reserve percentage to the calibrated capacity."""
+        reserve_percent = self.coordinator.data.inverter.battery_soc_reserve
+        capacity_ah = self.data.cap_calibrated
+        voltage = self.data.v_cells_sum
+        if reserve_percent is None or capacity_ah is None or voltage is None:
+            return None
+        reserve_kwh = (
+            float(reserve_percent) / 100 * float(capacity_ah) * float(voltage) / 1000
+        )
+        return round(reserve_kwh, 3)
+
+
+class BatteryRuntimeSensor(BatteryBasicSensor):
+    """Seconds until the battery is full, or down to its reserve."""
+
+    @property
+    def native_value(self) -> StateType:
+        """Estimate remaining charge or discharge time at the current power."""
+        capacity_ah = self.data.cap_calibrated
+        remaining_ah = self.data.cap_remaining
+        voltage = self.data.v_cells_sum
+        reserve_percent = self.coordinator.data.inverter.battery_soc_reserve
+        power = self.coordinator.data.inverter.p_battery
+        if (
+            capacity_ah is None
+            or remaining_ah is None
+            or voltage is None
+            or reserve_percent is None
+            or power is None
+        ):
+            return None
+
+        voltage = float(voltage)
+        capacity_wh = float(capacity_ah) * voltage
+        remaining_wh = float(remaining_ah) * voltage
+        reserve_wh = float(reserve_percent) / 100 * capacity_wh
+        watts = float(power)
+
+        # p_battery is negative while charging, positive while discharging.
+        if watts < 0 and remaining_wh < capacity_wh:
+            return round((capacity_wh - remaining_wh) / abs(watts) * 3600)
+        if watts > 0 and remaining_wh > reserve_wh:
+            return round((remaining_wh - reserve_wh) / watts * 3600)
+        return 0
 
 
 class BatteryCellsVoltageSensor(BatteryBasicSensor):
