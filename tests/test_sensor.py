@@ -1,8 +1,11 @@
 from unittest.mock import MagicMock
 
 from givenergy_modbus.model.inverter import Model
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.const import UnitOfEnergy
 
 from custom_components.givenergy_local.sensor import (
+    _BASIC_BATTERY_SENSORS,
     ConsumptionTodaySensor,
     ConsumptionTotalSensor,
     InverterBasicSensor,
@@ -169,3 +172,18 @@ def test_pv_power_skips_update_when_value_missing() -> None:
     sensor = PVPowerSensor(coordinator, MagicMock(), MagicMock())
 
     assert sensor.native_value is None
+
+
+def test_battery_energy_totals_have_energy_device_class() -> None:
+    """Charge/Discharge Total must be usable in the Energy dashboard."""
+    totals = [
+        description
+        for description in _BASIC_BATTERY_SENSORS
+        if description.key in ("battery_e_charge_total", "battery_e_discharge_total")
+    ]
+
+    assert len(totals) == 2
+    for description in totals:
+        assert description.device_class == SensorDeviceClass.ENERGY
+        assert description.state_class == SensorStateClass.TOTAL_INCREASING
+        assert description.native_unit_of_measurement == UnitOfEnergy.KILO_WATT_HOUR
