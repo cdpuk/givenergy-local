@@ -1,6 +1,8 @@
 """Home Assistant entity descriptions."""
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import MAJOR_VERSION, MINOR_VERSION
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -10,6 +12,11 @@ from givenergy_modbus.model.inverter_threephase import ThreePhaseInverter
 
 from .const import DOMAIN, MANUFACTURER
 from .coordinator import GivEnergyUpdateCoordinator
+
+# HA 2026.8 replaced the `via_device` identifier tuple in DeviceInfo with `via_device_id`,
+# which takes the parent's device registry ID. Cores older than that reject the new keyword,
+# so the form is chosen at runtime and `via_device` stays in use below 2026.8.
+_HA_SUPPORTS_VIA_DEVICE_ID = (MAJOR_VERSION, MINOR_VERSION) >= (2026, 8)
 
 # Maps battery design capacities (as seen under 'cap_design2') to model names.
 # Keys should match the values seen in the datasheets.
@@ -124,7 +131,7 @@ class BatteryEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
     def device_info(self) -> DeviceInfo:
         """Battery device information for the entity."""
 
-        return DeviceInfo(
+        device_info = DeviceInfo(
             identifiers={(DOMAIN, self.data.serial_number)},
             name="Battery",
             manufacturer=MANUFACTURER,
@@ -132,16 +139,28 @@ class BatteryEntity(CoordinatorEntity[GivEnergyUpdateCoordinator]):
             serial_number=self.data.serial_number,
             sw_version=str(self.data.bms_firmware_version),
             configuration_url="https://givenergy.cloud",
-            # HA 2026.8 dropped `via_device` from the DeviceInfo TypedDict in favour
-            # of `via_device_id`, which needs the inverter's device registry ID rather
-            # than its identifiers. We can't switch while hacs.json still supports
-            # 2026.3, because passing `via_device_id` to anything below 2026.8 raises.
-            # `via_device` keeps working until it's removed in HA 2027.8.
-            via_device=(  # type: ignore[typeddict-unknown-key]
-                DOMAIN,
-                self.coordinator.data.inverter.serial_number,
-            ),
         )
+
+        inverter_identifier = (DOMAIN, self.coordinator.data.inverter.serial_number)
+        if not _HA_SUPPORTS_VIA_DEVICE_ID:
+            device_info["via_device"] = (  # type: ignore[typeddict-unknown-key]
+                inverter_identifier
+            )
+        elif inverter_device_id := self._inverter_device_id(inverter_identifier):
+            device_info["via_device_id"] = inverter_device_id
+        # Otherwise the inverter device is not in the registry yet; leave the link out
+        # rather than fail entity setup. It is re-evaluated on the next reload.
+
+        return device_info
+
+    def _inverter_device_id(self, identifier: tuple[str, str]) -> str | None:
+        """Look up the inverter's device registry ID, if it has been registered."""
+        if getattr(self, "hass", None) is None:
+            return None
+        inverter_device = dr.async_get(self.hass).async_get_device_by_identifier(
+            identifier, self.config_entry.entry_id
+        )
+        return inverter_device.id if inverter_device is not None else None
 
     @property
     def data(self) -> Battery:
