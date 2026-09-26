@@ -1,6 +1,7 @@
 """Config flow for GivEnergy integration."""
 
 import asyncio
+import contextlib
 from typing import Any
 
 import voluptuous as vol
@@ -11,19 +12,28 @@ from .const import CONF_HOST, DOMAIN, LOGGER
 
 STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
 
+_VALIDATION_TIMEOUT = 10.0
+_CLOSE_TIMEOUT = 5.0
+
 
 async def read_inverter_serial(data: dict[str, Any]) -> str:
     """Validate user input by reading the inverter serial number."""
     client = Client(data[CONF_HOST], 8899)
-    async with asyncio.timeout(10):
-        await client.connect()
-        # detect() resolves the device topology; load_config() then reads the
-        # holding-register identity bank that carries the serial number.
-        await client.detect()
-        await client.load_config()
-        await client.close()
-
-    serial_no: str = client.plant.inverter.serial_number
+    try:
+        async with asyncio.timeout(_VALIDATION_TIMEOUT):
+            await client.connect()
+            # detect() resolves the device topology; load_config() then reads the
+            # holding-register identity bank that carries the serial number.
+            await client.detect()
+            await client.load_config()
+        serial_no: str = client.plant.inverter.serial_number
+    finally:
+        # Close even when connecting, detection or the timeout fails: otherwise the
+        # socket stays open and holds one of the dongle's limited connection slots
+        # (see #147). Bounded, and a failed close must not mask the original error.
+        with contextlib.suppress(Exception):
+            async with asyncio.timeout(_CLOSE_TIMEOUT):
+                await client.close()
     return serial_no
 
 
