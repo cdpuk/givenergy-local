@@ -88,8 +88,13 @@ class GivEnergyConfigFlow(ConfigFlow, domain=DOMAIN):
             errors["base"] = "cannot_connect"
         else:
             # Entries created before unique IDs were assigned have none: adopt the
-            # serial we just read. Otherwise refuse a host that is a different inverter.
-            await self.async_set_unique_id(serial_no, raise_on_progress=False)
+            # serial we just read, unless another entry already owns that inverter.
+            # Otherwise refuse a host that is a different inverter.
+            existing_entry = await self.async_set_unique_id(
+                serial_no, raise_on_progress=False
+            )
+            if existing_entry is not None and existing_entry.entry_id != entry.entry_id:
+                return self.async_abort(reason="already_configured")
             if entry.unique_id is not None:
                 self._abort_if_unique_id_mismatch(reason="different_inverter")
 

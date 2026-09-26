@@ -180,3 +180,25 @@ async def test_reconfigure_reports_connection_failure(hass, error_on_validation)
     assert result["type"] == FlowResultType.FORM
     assert result["errors"] == {"base": "cannot_connect"}
     assert entry.data[CONF_HOST] == MOCK_CONFIG[CONF_HOST]
+
+
+async def test_reconfigure_rejects_inverter_owned_by_another_entry(
+    hass, bypass_validation
+):
+    """A legacy entry must not adopt a serial another entry already owns."""
+    other = MockConfigEntry(
+        domain=DOMAIN, data={CONF_HOST: "other_host"}, unique_id=_MOCK_SERIAL_NO
+    )
+    other.add_to_hass(hass)
+    legacy = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=None)
+    legacy.add_to_hass(hass)
+
+    result = await legacy.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_HOST: "other_host"}
+    )
+
+    assert result["type"] == FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert legacy.unique_id is None
+    assert legacy.data[CONF_HOST] == MOCK_CONFIG[CONF_HOST]
