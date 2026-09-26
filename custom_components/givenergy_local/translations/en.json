@@ -7,10 +7,22 @@
                     "host": "Host",
                     "num_batteries": "Number of batteries"
                 }
+            },
+            "reconfigure": {
+                "title": "Update inverter connection",
+                "description": "Update the saved host for this inverter.",
+                "data": {
+                    "host": "Host"
+                }
             }
         },
         "error": {
             "cannot_connect": "Failed to connect to the inverter."
+        },
+        "abort": {
+            "already_configured": "This inverter is already configured.",
+            "different_inverter": "The new host belongs to a different inverter. Use the original host for this entry.",
+            "reconfigure_successful": "The inverter connection settings were updated."
         }
     }
 }

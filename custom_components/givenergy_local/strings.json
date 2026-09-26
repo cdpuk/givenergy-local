@@ -1,11 +1,24 @@
 {
   "config": {
     "step": {
+      "reconfigure": {
+        "title": "Update inverter connection",
+        "description": "Update the saved host for this inverter.",
+        "data": {
+          "host": "Host"
+        }
+      },
       "confirm": {
         "description": "[%key:common::config_flow::description::confirm_setup%]"
       }
     },
+    "error": {
+      "cannot_connect": "Failed to connect to the inverter."
+    },
     "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "different_inverter": "The new host belongs to a different inverter. Use the original host for this entry.",
+      "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]",
       "single_instance_allowed": "[%key:common::config_flow::abort::single_instance_allowed%]",
       "no_devices_found": "[%key:common::config_flow::abort::no_devices_found%]"
     }
