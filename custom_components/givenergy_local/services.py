@@ -8,7 +8,7 @@ from homeassistant.const import ATTR_DEVICE_ID
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import device_registry as dr
 from homeassistant.util import dt as dt_util
-import voluptuous as vol
+import probatio as vol
 
 from givenergy_modbus.client import commands as ge_commands
 from givenergy_modbus.model import TimeSlot

@@ -3,7 +3,7 @@
 import asyncio
 from typing import Any
 
-import voluptuous as vol
+import probatio as vol
 from givenergy_modbus.client.client import Client
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 
